@@ -1,6 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RootState } from './store'
+import { ThemeProvider } from './theme/ThemeContext'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import AdaptiveThemeProvider from './components/AdaptiveThemeProvider'
 import Layout from './components/Layout'
 import Login from './features/auth/Login'
 import Dashboard from './features/dashboard/Dashboard'
@@ -13,22 +17,28 @@ import AIAssistant from './features/ai-assistant/AIAssistant'
 function App() {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated)
 
-  if (!isAuthenticated) {
-    return <Login />
-  }
-
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/communications" element={<Communications />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/incidents" element={<Incidents />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/assistant" element={<AIAssistant />} />
-      </Routes>
-    </Layout>
+    <ThemeProvider>
+      <AdaptiveThemeProvider>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          {!isAuthenticated ? (
+            <Login />
+          ) : (
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/communications" element={<Communications />} />
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/incidents" element={<Incidents />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/assistant" element={<AIAssistant />} />
+              </Routes>
+            </Layout>
+          )}
+        </LocalizationProvider>
+      </AdaptiveThemeProvider>
+    </ThemeProvider>
   )
 }
 

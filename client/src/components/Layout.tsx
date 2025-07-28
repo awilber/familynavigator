@@ -12,7 +12,7 @@ import {
   ListItemText, 
   Toolbar, 
   Typography,
-  useTheme,
+  useTheme as useMuiTheme,
   useMediaQuery
 } from '@mui/material'
 import {
@@ -28,6 +28,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { logout } from '../features/auth/authSlice'
+import ThemeToggle from './ThemeToggle'
 
 const drawerWidth = 240
 
@@ -36,8 +37,8 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const muiTheme = useMuiTheme()
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'))
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -114,9 +115,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {menuItems.find(item => item.path === location.pathname)?.text || 'Family Navigator'}
           </Typography>
+          <ThemeToggle />
         </Toolbar>
       </AppBar>
       <Box

@@ -7,7 +7,8 @@ import {
   Typography,
   Box,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Link
 } from '@mui/material'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '../../store'
@@ -39,6 +40,22 @@ const Login: React.FC = () => {
       dispatch(loginFailure('Invalid email or password'))
     }
   }
+
+  const handleSkipSignIn = async () => {
+    dispatch(loginStart())
+    
+    // Immediate debug login with mock user
+    setTimeout(() => {
+      dispatch(loginSuccess({
+        id: 'debug-user',
+        email: 'debug@familynavigator.dev',
+        name: 'Debug User'
+      }))
+    }, 100)
+  }
+
+  // Check if we're in development mode
+  const isDevelopment = (import.meta as any).env?.DEV ?? process.env.NODE_ENV === 'development'
 
   return (
     <Container component="main" maxWidth="xs">
@@ -98,6 +115,36 @@ const Login: React.FC = () => {
             >
               {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
+            
+            {isDevelopment && (
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={handleSkipSignIn}
+                  disabled={loading}
+                  sx={{
+                    color: 'warning.main',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: 'none',
+                    '&:hover': {
+                      color: 'warning.dark',
+                    },
+                    '&:disabled': {
+                      color: 'text.disabled',
+                      cursor: 'not-allowed',
+                    }
+                  }}
+                >
+                  🚧 Skip Sign-In (Debug Mode)
+                </Link>
+                <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  Development only - not available in production
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Paper>
       </Box>
