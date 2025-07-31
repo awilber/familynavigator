@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material'
 import ContactsList from './ContactsList'
 import CommunicationTimeline from './CommunicationTimeline'
+import GmailIntegration from './GmailIntegration'
 import { Contact, CommunicationStats } from '../types'
 import { communicationsApi } from '../services/api'
 
@@ -133,6 +134,9 @@ const CommunicationsView: React.FC = () => {
           </Grid>
         </Grid>
       )}
+
+      {/* Gmail Integration */}
+      <GmailIntegration />
 
       {/* Main Content */}
       <Grid container spacing={3} sx={{ flex: 1, minHeight: 0 }}>

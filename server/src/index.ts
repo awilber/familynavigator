@@ -9,6 +9,7 @@ import communicationsRoutes from './routes/communications'
 import contactsRoutes from './routes/contacts'
 import documentsRoutes from './routes/documents'
 import incidentsRoutes from './routes/incidents'
+import gmailRoutes from './routes/gmail'
 import { databaseService } from './services/database'
 
 dotenv.config()
@@ -26,6 +27,7 @@ app.use('/api/communications', communicationsRoutes)
 app.use('/api/contacts', contactsRoutes)
 app.use('/api/documents', documentsRoutes)
 app.use('/api/incidents', incidentsRoutes)
+app.use('/api/gmail', gmailRoutes)
 
 app.use(errorHandler)
 
