@@ -1,0 +1,99 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_REGION: us-east-1
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm run build
+        
+    - name: Run tests
+      run: |
+        npm run test:client
+        npm run test:server
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Build and push Docker images
+      run: |
+        # Build client
+        docker build -t familynavigator-client:${{ github.sha }} ./client
+        
+        # Build server
+        docker build -t familynavigator-server:${{ github.sha }} ./server
+        
+        # Tag for ECR
+        docker tag familynavigator-client:${{ github.sha }} ${{ secrets.ECR_REGISTRY }}/familynavigator-client:${{ github.sha }}
+        docker tag familynavigator-server:${{ github.sha }} ${{ secrets.ECR_REGISTRY }}/familynavigator-server:${{ github.sha }}
+        
+        # Login to ECR
+        aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+        
+        # Push to ECR
+        docker push ${{ secrets.ECR_REGISTRY }}/familynavigator-client:${{ github.sha }}
+        docker push ${{ secrets.ECR_REGISTRY }}/familynavigator-server:${{ github.sha }}
+        
+    - name: Deploy to ECS
+      run: |
+        # Update ECS service with new image
+        aws ecs update-service \
+          --cluster familynavigator-cluster \
+          --service familynavigator-service \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+          
+        # Wait for deployment to complete
+        aws ecs wait services-stable \
+          --cluster familynavigator-cluster \
+          --services familynavigator-service \
+          --region ${{ env.AWS_REGION }}
+          
+    - name: Verify deployment
+      run: |
+        # Get the service endpoint
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+          --names familynavigator-alb \
+          --query 'LoadBalancers[0].DNSName' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+          
+        echo "Application deployed to: https://${ALB_DNS}"
+        
+        # Health check
+        curl -f "https://${ALB_DNS}/api/health" || exit 1
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful"
+        else
+          echo "❌ Deployment failed"
+          exit 1
+        fi
