@@ -169,8 +169,8 @@ const ContactsList: React.FC<ContactsListProps> = ({
 
               <ListItemText
                 primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="subtitle1" fontWeight="medium">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Typography variant="subtitle1" fontWeight="medium" component="span">
                       {contact.display_name || contact.name}
                     </Typography>
                     {contact.metadata?.relationship && (
@@ -184,29 +184,29 @@ const ContactsList: React.FC<ContactsListProps> = ({
                         }}
                       />
                     )}
-                  </Box>
+                  </span>
                 }
                 secondary={
-                  <Box sx={{ mt: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <span style={{ display: 'block', marginTop: '4px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       {contact.primary_email && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" component="span">
                             {contact.primary_email}
                           </Typography>
-                        </Box>
+                        </span>
                       )}
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">
+                    </span>
+                    <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {contact.message_count || 0} messages
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" component="span">
                         {formatLastCommunication(contact.last_communication)}
                       </Typography>
-                    </Box>
-                  </Box>
+                    </span>
+                  </span>
                 }
               />
 

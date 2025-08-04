@@ -20,11 +20,37 @@ const formatTimestamp = (): string => {
   return new Date().toISOString()
 }
 
+const formatFileTimestamp = (): string => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  
+  return `${year}${month}${day}-${hours}${minutes}${seconds}`
+}
+
 const ensureLogDirectory = (): void => {
   const logsDir = path.join(process.cwd(), 'logs')
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true })
   }
+}
+
+// Cache to store the current session's timestamped filenames
+const sessionFilenames = new Map<string, string>()
+
+const getTimestampedFilename = (baseFilename: string): string => {
+  if (!sessionFilenames.has(baseFilename)) {
+    const nameWithoutExt = baseFilename.replace(/\.[^/.]+$/, '')
+    const ext = path.extname(baseFilename) || '.log'
+    const timestamp = formatFileTimestamp()
+    const timestampedFilename = `${nameWithoutExt}-${timestamp}${ext}`
+    sessionFilenames.set(baseFilename, timestampedFilename)
+  }
+  return sessionFilenames.get(baseFilename)!
 }
 
 const writeToLogFile = (filename: string, level: LogLevel, message: string, ...args: any[]): void => {
@@ -37,11 +63,13 @@ const writeToLogFile = (filename: string, level: LogLevel, message: string, ...a
       message,
       args: args.length > 0 ? args : undefined,
       pid: process.pid,
-      service: 'familynavigator-server'
+      service: 'familynavigator-server',
+      session: process.env.LOG_SESSION_ID || 'default'
     }
     
     const logLine = JSON.stringify(logEntry) + '\n'
-    const logPath = path.join(process.cwd(), 'logs', filename)
+    const timestampedFilename = getTimestampedFilename(filename)
+    const logPath = path.join(process.cwd(), 'logs', timestampedFilename)
     
     fs.appendFileSync(logPath, logLine)
   } catch (error) {
