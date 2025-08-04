@@ -12,12 +12,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Grid,
   Card,
   CardContent,
-  IconButton
 } from '@mui/material'
 import {
   Google as GoogleIcon,
@@ -25,7 +22,6 @@ import {
   Pause as PauseIcon,
   PlayArrow as PlayIcon,
   Stop as StopIcon,
-  Settings as SettingsIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Info as InfoIcon

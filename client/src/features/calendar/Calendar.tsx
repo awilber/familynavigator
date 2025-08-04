@@ -52,10 +52,10 @@ interface CalendarEvent {
 
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [, setSelectedDate] = useState<Date | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-  const [viewType, setViewType] = useState<'month' | 'week' | 'day'>('month')
+  useState<'month' | 'week' | 'day'>('month')
 
   // Mock events - replace with API call
   const events: CalendarEvent[] = [
@@ -104,20 +104,6 @@ const Calendar: React.FC = () => {
     }
   ]
 
-  const getEventTypeColor = (type: CalendarEvent['type']) => {
-    switch (type) {
-      case 'custody':
-        return '#2196f3'
-      case 'court':
-        return '#f44336'
-      case 'medical':
-        return '#4caf50'
-      case 'school':
-        return '#ff9800'
-      default:
-        return '#9e9e9e'
-    }
-  }
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()

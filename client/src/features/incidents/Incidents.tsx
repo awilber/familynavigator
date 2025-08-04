@@ -26,7 +26,6 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
-  CheckCircle as ResolvedIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   AccessTime as TimeIcon,
