@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
+import path from 'path'
 import { errorHandler } from './middleware/errorHandler'
 import { logger } from './utils/logger'
 import authRoutes from './routes/auth'
@@ -12,7 +13,7 @@ import incidentsRoutes from './routes/incidents'
 import gmailRoutes from './routes/gmail'
 import { databaseService } from './services/database'
 
-dotenv.config()
+dotenv.config({ path: path.join(__dirname, '../../.env') })
 
 const app = express()
 const PORT = parseInt(process.env.PORT || '6000')

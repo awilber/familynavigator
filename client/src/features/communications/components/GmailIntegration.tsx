@@ -251,6 +251,30 @@ const GmailIntegration: React.FC = () => {
     }
   }
 
+  const handleTestSync = async () => {
+    try {
+      const options = {
+        batchSize: 10,
+        maxMessages: 10,
+        query: syncOptions.query || ''
+      }
+
+      const response = await fetch('/api/gmail/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setProgress(data.data)
+      }
+    } catch (error) {
+      console.error('Error starting test sync:', error)
+    }
+  }
+
   const getProgressPercentage = (): number => {
     if (progress.totalMessages === 0) return 0
     return Math.round((progress.processedMessages / progress.totalMessages) * 100)
@@ -418,6 +442,35 @@ const GmailIntegration: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Quick Filters */}
+          <Card sx={{ mb: 3, backgroundColor: 'background.default' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Quick Email Filter
+              </Typography>
+              <TextField
+                fullWidth
+                label="Filter Messages"
+                value={syncOptions.query}
+                onChange={(e) => setSyncOptions({
+                  ...syncOptions,
+                  query: e.target.value
+                })}
+                placeholder="e.g., from:person@example.com OR to:person@example.com"
+                helperText="Gmail search syntax: from:email@domain.com, to:email@domain.com, (from:email1 OR to:email2)"
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                <strong>Examples:</strong><br/>
+                • <code>from:john@example.com</code> - Messages from John<br/>
+                • <code>to:mary@example.com</code> - Messages to Mary<br/>
+                • <code>(from:john@example.com OR to:john@example.com)</code> - Any messages involving John<br/>
+                • <code>from:john@example.com OR from:mary@example.com</code> - Messages from John or Mary
+              </Typography>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
             {progress.status === 'idle' || progress.status === 'completed' || progress.status === 'error' ? (
@@ -429,6 +482,14 @@ const GmailIntegration: React.FC = () => {
                   color="primary"
                 >
                   Start Full Sync
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<SyncIcon />}
+                  onClick={handleTestSync}
+                  color="secondary"
+                >
+                  Test Sync (10 messages)
                 </Button>
                 <Button
                   variant="outlined"

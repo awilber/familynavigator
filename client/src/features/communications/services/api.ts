@@ -1,6 +1,6 @@
 import { Contact, Communication, SearchFilters, ApiResponse, CommunicationStats } from '../types'
 
-const API_BASE = 'http://localhost:6000/api'
+const API_BASE = 'http://localhost:7001/api'
 
 class CommunicationsApi {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {

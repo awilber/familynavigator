@@ -1,35 +1,66 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { logger } from '../utils/logger'
+import { userService } from '../services/auth/UserService'
 
 const router = Router()
 
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('User registration attempt', { email: req.body.email })
+    const { email, password, name } = req.body
     
-    // TODO: Implement user registration logic
+    if (!email || !password || !name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, password, and name are required'
+      })
+    }
+
+    logger.info('User registration attempt', { email })
+    
+    const user = await userService.createUser({ email, password, name })
+    
     res.status(201).json({
-      message: 'User registration endpoint - not implemented yet',
-      data: { email: req.body.email }
+      success: true,
+      data: { user },
+      message: 'User registered successfully'
     })
   } catch (error) {
-    next(error)
+    logger.error('Registration failed', { error: error instanceof Error ? error.message : error })
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Registration failed'
+    })
   }
 })
 
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('User login attempt', { email: req.body.email })
+    const { email, password } = req.body
     
-    // TODO: Implement user login logic
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and password are required'
+      })
+    }
+
+    logger.info('User login attempt', { email })
+    
+    const { user, token } = await userService.authenticateUser({ email, password })
+    
     res.json({
-      message: 'User login endpoint - not implemented yet',
-      data: { email: req.body.email }
+      success: true,
+      data: { user, token },
+      message: 'Login successful'
     })
   } catch (error) {
-    next(error)
+    logger.error('Login failed', { error: error instanceof Error ? error.message : error })
+    res.status(401).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Authentication failed'
+    })
   }
 })
 
