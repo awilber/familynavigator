@@ -2,6 +2,7 @@ import { getGmailService } from './index'
 import { EmailParser, ParsedEmailData } from './emailParser'
 import { ContactRepository, CommunicationRepository } from '../database/repositories'
 import { databaseService } from '../database'
+import { logger } from '../../utils/logger'
 
 export interface SyncProgress {
   status: 'idle' | 'running' | 'paused' | 'completed' | 'error'
@@ -102,13 +103,22 @@ export class GmailSyncService {
       this.progress.detailedErrors = this.progress.detailedErrors.slice(-50)
     }
 
-    console.error(`[Gmail Sync Error] ${operation}:`, {
+    // Log to file and console
+    const logMessage = `[Gmail Sync Error] ${operation}`
+    const logData = {
       messageId,
       error: syncError.error,
       stackTrace: syncError.stackTrace,
       apiResponse: syncError.apiResponse,
-      timestamp: syncError.timestamp
-    })
+      timestamp: syncError.timestamp,
+      isCritical
+    }
+
+    if (isCritical) {
+      logger.gmail.error(logMessage, logData)
+    } else {
+      logger.gmail.warn(logMessage, logData)
+    }
   }
 
   private logApiCall(endpoint: string, method: string, statusCode: number, response: any, responseTime: number): void {
@@ -128,13 +138,40 @@ export class GmailSyncService {
       this.progress.rawApiResponses = this.progress.rawApiResponses.slice(-20)
     }
 
-    console.log(`[Gmail API] ${method} ${endpoint}: ${statusCode} (${responseTime}ms)`)
+    // Log to file and console
+    const logMessage = `[Gmail API] ${method} ${endpoint}: ${statusCode} (${responseTime}ms)`
+    const logData = {
+      endpoint,
+      method,
+      statusCode,
+      responseTime,
+      response: statusCode >= 400 ? response : undefined
+    }
+
+    if (statusCode >= 400) {
+      logger.gmail.error(logMessage, logData)
+    } else {
+      logger.gmail.info(logMessage, logData)
+    }
   }
 
   private updateOperation(operation: string, details: string): void {
     this.progress.currentOperation = operation
     this.progress.operationDetails = details
-    console.log(`[Gmail Sync] ${operation}: ${details}`)
+    
+    // Log to file and console
+    const logMessage = `[Gmail Sync] ${operation}: ${details}`
+    logger.gmail.info(logMessage, {
+      operation,
+      details,
+      progress: {
+        status: this.progress.status,
+        processedMessages: this.progress.processedMessages,
+        totalMessages: this.progress.totalMessages,
+        currentBatch: this.progress.currentBatch,
+        totalBatches: this.progress.totalBatches
+      }
+    })
   }
 
   private calculateMessagesPerSecond(): void {

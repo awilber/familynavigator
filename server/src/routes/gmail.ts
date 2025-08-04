@@ -1,6 +1,7 @@
 import express from 'express'
 import { getGmailService } from '../services/gmail'
 import { gmailSyncService, SyncOptions } from '../services/gmail/syncService'
+import { logger } from '../utils/logger'
 
 const router = express.Router()
 
@@ -127,17 +128,25 @@ router.post('/sync', async (req, res) => {
       data: gmailSyncService.getProgress()
     })
   } catch (error) {
-    console.error('Error starting Gmail sync:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to start Gmail sync'
+    const errorDetails = {
+      timestamp: new Date().toISOString(),
+      operation: 'Start Gmail Sync',
+      stackTrace: error instanceof Error ? error.stack : undefined,
+      errorType: error?.constructor?.name || 'Unknown',
+      syncProgress: gmailSyncService.getProgress(),
+      requestBody: req.body
+    }
+
+    logger.gmail.error('Error starting Gmail sync', {
+      error: errorMessage,
+      details: errorDetails
+    })
+
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to start Gmail sync',
-      details: {
-        timestamp: new Date().toISOString(),
-        operation: 'Start Gmail Sync',
-        stackTrace: error instanceof Error ? error.stack : undefined,
-        errorType: error?.constructor?.name || 'Unknown',
-        syncProgress: gmailSyncService.getProgress()
-      }
+      error: errorMessage,
+      details: errorDetails
     })
   }
 })
