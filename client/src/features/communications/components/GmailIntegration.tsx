@@ -36,6 +36,26 @@ interface GmailStatus {
   }
 }
 
+interface SyncError {
+  timestamp: string
+  messageId?: string
+  operation: string
+  error: string
+  stackTrace?: string
+  apiResponse?: any
+  retryCount: number
+  isCritical: boolean
+}
+
+interface ApiResponse {
+  timestamp: string
+  endpoint: string
+  method: string
+  statusCode: number
+  response: any
+  responseTime: number
+}
+
 interface SyncProgress {
   status: 'idle' | 'running' | 'paused' | 'completed' | 'error'
   totalMessages: number
@@ -45,6 +65,18 @@ interface SyncProgress {
   startTime?: string
   endTime?: string
   error?: string
+  detailedErrors: SyncError[]
+  currentOperation: string
+  operationDetails: string
+  messagesPerSecond: number
+  estimatedTimeRemaining?: number
+  rawApiResponses: ApiResponse[]
+  connectionStatus: 'connected' | 'disconnected' | 'reconnecting'
+  rateLimitStatus?: {
+    remaining: number
+    resetTime: string
+    dailyQuotaUsed: number
+  }
 }
 
 interface SyncOptions {
@@ -62,10 +94,17 @@ const GmailIntegration: React.FC = () => {
     totalMessages: 0,
     processedMessages: 0,
     currentBatch: 0,
-    totalBatches: 0
+    totalBatches: 0,
+    detailedErrors: [],
+    currentOperation: 'Idle',
+    operationDetails: 'Service ready to start sync',
+    messagesPerSecond: 0,
+    rawApiResponses: [],
+    connectionStatus: 'disconnected'
   })
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [showVerboseLogging, setShowVerboseLogging] = useState(true)
   const [syncOptions, setSyncOptions] = useState<SyncOptions>({
     batchSize: 100,
     maxMessages: undefined,
@@ -265,10 +304,61 @@ const GmailIntegration: React.FC = () => {
       
       if (data.success) {
         setProgress(data.data)
+      } else {
+        // Display detailed error information
+        const errorInfo = {
+          timestamp: new Date().toISOString(),
+          messageId: undefined,
+          operation: 'Test Sync Start',
+          error: data.error || 'Unknown error occurred',
+          stackTrace: data.details?.stackTrace,
+          apiResponse: data.details,
+          retryCount: 0,
+          isCritical: true
+        }
+        
+        setProgress(prev => ({
+          ...prev,
+          status: 'error',
+          error: data.error,
+          detailedErrors: [...prev.detailedErrors, errorInfo],
+          currentOperation: 'Test Sync Failed',
+          operationDetails: `Error: ${data.error}`,
+          connectionStatus: 'disconnected'
+        }))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting test sync:', error)
+      
+      const errorInfo = {
+        timestamp: new Date().toISOString(),
+        messageId: undefined,
+        operation: 'Test Sync Network Error',
+        error: error.message || 'Network error occurred',
+        stackTrace: error.stack,
+        apiResponse: undefined,
+        retryCount: 0,
+        isCritical: true
+      }
+      
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'Network error during test sync',
+        detailedErrors: [...prev.detailedErrors, errorInfo],
+        currentOperation: 'Network Error',
+        operationDetails: `Failed to connect to server: ${error.message}`,
+        connectionStatus: 'disconnected'
+      }))
     }
+  }
+
+  const handleClearErrors = () => {
+    setProgress(prev => ({
+      ...prev,
+      detailedErrors: [],
+      rawApiResponses: []
+    }))
   }
 
   const getProgressPercentage = (): number => {
@@ -437,6 +527,132 @@ const GmailIntegration: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Detailed Progress Information */}
+          {(progress.status === 'running' || progress.status === 'paused' || progress.detailedErrors.length > 0) && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Detailed Progress Information
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => setShowVerboseLogging(!showVerboseLogging)}
+                      variant={showVerboseLogging ? 'contained' : 'outlined'}
+                    >
+                      {showVerboseLogging ? 'Hide' : 'Show'} Verbose Logs
+                    </Button>
+                    {(progress.detailedErrors.length > 0 || progress.rawApiResponses.length > 0) && (
+                      <Button
+                        size="small"
+                        onClick={handleClearErrors}
+                        variant="outlined"
+                        color="error"
+                      >
+                        Clear Logs
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+                
+                {/* Current Operation */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" color="primary">
+                    Current Operation: {progress.currentOperation}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {progress.operationDetails}
+                  </Typography>
+                </Box>
+
+                {/* Performance Metrics */}
+                {progress.status === 'running' && progress.messagesPerSecond > 0 && (
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Messages/Second
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {progress.messagesPerSecond}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Connection Status
+                      </Typography>
+                      <Chip 
+                        label={progress.connectionStatus} 
+                        color={progress.connectionStatus === 'connected' ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </Grid>
+                    {progress.estimatedTimeRemaining && (
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="body2" color="text.secondary">
+                          Est. Time Remaining
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {Math.floor(progress.estimatedTimeRemaining / 60)}m {progress.estimatedTimeRemaining % 60}s
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                )}
+
+                {/* Error Details */}
+                {showVerboseLogging && progress.detailedErrors.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="error" gutterBottom>
+                      Errors ({progress.detailedErrors.length})
+                    </Typography>
+                    <Box sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                      {progress.detailedErrors.slice(-5).map((error, index) => (
+                        <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: error.isCritical ? 'error.light' : 'grey.100', borderRadius: 1 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(error.timestamp).toLocaleTimeString()} - {error.operation}
+                            {error.messageId && ` (Message: ${error.messageId})`}
+                          </Typography>
+                          <Typography variant="body2" color={error.isCritical ? 'error.main' : 'text.primary'}>
+                            {error.error}
+                          </Typography>
+                          {error.apiResponse && (
+                            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', display: 'block', mt: 0.5 }}>
+                              API Response: {JSON.stringify(error.apiResponse, null, 2)}
+                            </Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* API Call Log */}
+                {showVerboseLogging && progress.rawApiResponses.length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" color="primary" gutterBottom>
+                      Recent API Calls ({progress.rawApiResponses.length})
+                    </Typography>
+                    <Box sx={{ maxHeight: 150, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                      {progress.rawApiResponses.slice(-10).map((api, index) => (
+                        <Box key={index} sx={{ mb: 0.5, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          <Typography variant="caption" color={api.statusCode >= 400 ? 'error.main' : 'success.main'}>
+                            {new Date(api.timestamp).toLocaleTimeString()} - {api.method} {api.endpoint} - {api.statusCode} ({api.responseTime}ms)
+                          </Typography>
+                          {api.statusCode >= 400 && api.response !== 'Success' && (
+                            <Typography variant="caption" color="error.main" sx={{ display: 'block', ml: 2 }}>
+                              {JSON.stringify(api.response)}
+                            </Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Filters */}
           <Card sx={{ mb: 3, backgroundColor: 'background.default' }}>

@@ -130,7 +130,14 @@ router.post('/sync', async (req, res) => {
     console.error('Error starting Gmail sync:', error)
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to start Gmail sync'
+      error: error instanceof Error ? error.message : 'Failed to start Gmail sync',
+      details: {
+        timestamp: new Date().toISOString(),
+        operation: 'Start Gmail Sync',
+        stackTrace: error instanceof Error ? error.stack : undefined,
+        errorType: error?.constructor?.name || 'Unknown',
+        syncProgress: gmailSyncService.getProgress()
+      }
     })
   }
 })
