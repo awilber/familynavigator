@@ -197,8 +197,17 @@ const GmailIntegration: React.FC = () => {
           totalMessages: 0,
           processedMessages: 0,
           currentBatch: 0,
-          totalBatches: 0
+          totalBatches: 0,
+          detailedErrors: [],
+          currentOperation: 'Disconnected',
+          operationDetails: 'Gmail account disconnected. Ready to reconnect with proper permissions.',
+          messagesPerSecond: 0,
+          rawApiResponses: [],
+          connectionStatus: 'disconnected'
         })
+        
+        // Show success message briefly
+        console.log('Gmail account disconnected successfully. You can now reconnect for fresh permissions.')
       }
     } catch (error) {
       console.error('Error revoking Gmail authentication:', error)
@@ -515,8 +524,32 @@ const GmailIntegration: React.FC = () => {
               )}
 
               {progress.status === 'error' && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {progress.error}
+                <Alert 
+                  severity="error" 
+                  sx={{ mb: 2 }}
+                  action={
+                    progress.error?.includes('authentication required') ||
+                    progress.error?.includes('re-authenticate') ? (
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={handleRevoke}
+                        sx={{ ml: 1 }}
+                      >
+                        Disconnect & Reconnect
+                      </Button>
+                    ) : null
+                  }
+                >
+                  <Typography variant="body2" component="div">
+                    <strong>Sync Error:</strong> {progress.error}
+                  </Typography>
+                  {(progress.error?.includes('authentication required') ||
+                    progress.error?.includes('re-authenticate')) && (
+                    <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
+                      This usually indicates a permission scope issue. Please disconnect and reconnect your Gmail account to get the proper permissions.
+                    </Typography>
+                  )}
                 </Alert>
               )}
 

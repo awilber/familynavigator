@@ -36,8 +36,9 @@ export class GmailService {
    */
   getAuthUrl(): string {
     const scopes = [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.metadata'
+      'https://www.googleapis.com/auth/gmail.readonly'
+      // Removed metadata scope as it conflicts with query parameters
+      // readonly scope provides full read access including metadata
     ]
 
     return this.oauth2Client.generateAuthUrl({
@@ -95,6 +96,18 @@ export class GmailService {
       }
 
       const tokens = JSON.parse(tokenRow.value) as StoredToken
+      
+      // Validate scope to ensure we have the correct permissions
+      const requiredScope = 'https://www.googleapis.com/auth/gmail.readonly'
+      const hasMetadataScope = tokens.scope && tokens.scope.includes('gmail.metadata')
+      const hasReadonlyScope = tokens.scope && tokens.scope.includes('gmail.readonly')
+      
+      if (hasMetadataScope && !hasReadonlyScope) {
+        console.log('Detected incompatible scope (metadata only). Forcing re-authentication...')
+        // Clear the stored tokens to force re-authentication with correct scope
+        await this.revokeAuth()
+        return false
+      }
       
       // Check if token is expired and try to refresh
       if (tokens.expiry_date && tokens.expiry_date <= Date.now()) {

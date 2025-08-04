@@ -103,6 +103,26 @@ export class GmailSyncService {
       this.progress.detailedErrors = this.progress.detailedErrors.slice(-50)
     }
 
+    // Enhanced error analysis for common Gmail API issues
+    let errorAnalysis = ''
+    let suggestedFix = ''
+    
+    if (error?.message?.includes('Metadata scope does not support') || 
+        error?.cause?.message?.includes('Metadata scope does not support')) {
+      errorAnalysis = 'OAUTH_SCOPE_INSUFFICIENT: Gmail API metadata scope cannot use query parameters'
+      suggestedFix = 'Requires gmail.readonly scope for full message access'
+      isCritical = true
+    } else if (error?.code === 403 || error?.status === 403) {
+      errorAnalysis = 'PERMISSION_DENIED: Insufficient Gmail API permissions'
+      suggestedFix = 'Check OAuth scopes and re-authenticate if necessary'
+    } else if (error?.code === 401 || error?.status === 401) {
+      errorAnalysis = 'AUTHENTICATION_FAILED: Gmail API authentication invalid'
+      suggestedFix = 'Token may be expired, re-authentication required'
+    } else if (error?.code === 429 || error?.status === 429) {
+      errorAnalysis = 'RATE_LIMIT_EXCEEDED: Gmail API quota exceeded'
+      suggestedFix = 'Implement exponential backoff and reduce request frequency'
+    }
+
     // Log to file and console
     const logMessage = `[Gmail Sync Error] ${operation}`
     const logData = {
@@ -111,7 +131,17 @@ export class GmailSyncService {
       stackTrace: syncError.stackTrace,
       apiResponse: syncError.apiResponse,
       timestamp: syncError.timestamp,
-      isCritical
+      isCritical,
+      errorAnalysis,
+      suggestedFix,
+      gmailApiError: {
+        code: error?.code || error?.status,
+        statusText: error?.statusText,
+        method: error?.config?.method,
+        url: error?.config?.url?.href || error?.config?.url,
+        params: error?.config?.params,
+        causedBy: error?.cause?.message
+      }
     }
 
     if (isCritical) {
@@ -227,8 +257,16 @@ export class GmailSyncService {
       
       if (!isAuthenticated) {
         this.progress.connectionStatus = 'disconnected'
-        const errorMsg = 'Gmail authentication required. Please authenticate with Google first.'
+        const errorMsg = 'Gmail authentication required. Please re-authenticate with Google to get correct permissions.'
         this.logError(undefined, 'Authentication Check', errorMsg, true)
+        
+        // Log scope validation details
+        logger.gmail.info('[Gmail Sync] Scope Validation', {
+          operation: 'Authentication Check',
+          details: 'Token validation failed - likely due to insufficient scope permissions',
+          recommendedAction: 'User should disconnect and reconnect Gmail account for proper oauth scope'
+        })
+        
         throw new Error(errorMsg)
       }
 
