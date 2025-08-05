@@ -111,7 +111,7 @@ router.get('/debug-tokens', async (req, res) => {
       const possibleEncrypted = JSON.parse(tokenRow.value)
       const decrypted = databaseService.decrypt(possibleEncrypted)
       parsedTokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
-    } catch (parseError) {
+    } catch (parseError: any) {
       return res.json({
         success: true,
         data: { 
