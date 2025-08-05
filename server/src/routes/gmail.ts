@@ -107,13 +107,16 @@ router.get('/debug-tokens', async (req, res) => {
 
     let parsedTokens
     try {
-      parsedTokens = JSON.parse(tokenRow.value)
+      // Handle encrypted tokens
+      const possibleEncrypted = JSON.parse(tokenRow.value)
+      const decrypted = databaseService.decrypt(possibleEncrypted)
+      parsedTokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
     } catch (parseError) {
       return res.json({
         success: true,
         data: { 
           message: 'Error parsing stored tokens',
-          rawValue: tokenRow.value,
+          rawValue: tokenRow.value.substring(0, 100) + '...', // Truncate for security
           parseError: parseError.message
         }
       })

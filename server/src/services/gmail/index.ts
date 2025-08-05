@@ -95,7 +95,18 @@ export class GmailService {
         return false
       }
 
-      const tokens = JSON.parse(tokenRow.value) as StoredToken
+      // Decrypt the stored token data
+      let tokens: StoredToken
+      try {
+        // First try to parse as encrypted data
+        const possibleEncrypted = JSON.parse(tokenRow.value)
+        const decrypted = databaseService.decrypt(possibleEncrypted)
+        tokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
+      } catch (decryptError) {
+        // Fallback to direct parsing if decryption fails (for backward compatibility)
+        console.log('Decryption failed, trying direct parse:', decryptError.message)
+        tokens = JSON.parse(tokenRow.value)
+      }
       
       // Debug: Log token scope information using proper logger
       const tokenInfo = {
