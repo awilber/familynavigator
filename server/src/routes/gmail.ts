@@ -87,6 +87,66 @@ router.get('/status', async (req, res) => {
   }
 })
 
+// GET /api/gmail/debug-tokens - Debug token information
+router.get('/debug-tokens', async (req, res) => {
+  try {
+    const { databaseService } = require('../services/database')
+    const db = await databaseService.getDatabase()
+    
+    const tokenRow = await db.get(
+      'SELECT value FROM app_config WHERE key = ?',
+      ['gmail_tokens']
+    )
+    
+    if (!tokenRow) {
+      return res.json({
+        success: true,
+        data: { message: 'No tokens found in database' }
+      })
+    }
+
+    let parsedTokens
+    try {
+      parsedTokens = JSON.parse(tokenRow.value)
+    } catch (parseError) {
+      return res.json({
+        success: true,
+        data: { 
+          message: 'Error parsing stored tokens',
+          rawValue: tokenRow.value,
+          parseError: parseError.message
+        }
+      })
+    }
+
+    // Redact sensitive information but show structure and scope
+    const debugInfo = {
+      hasAccessToken: !!parsedTokens.access_token,
+      hasRefreshToken: !!parsedTokens.refresh_token,
+      scope: parsedTokens.scope,
+      tokenType: parsedTokens.token_type,
+      expiryDate: parsedTokens.expiry_date ? new Date(parsedTokens.expiry_date) : null,
+      isExpired: parsedTokens.expiry_date ? parsedTokens.expiry_date <= Date.now() : false,
+      scopeAnalysis: {
+        hasMetadataScope: parsedTokens.scope?.includes('gmail.metadata'),
+        hasReadonlyScope: parsedTokens.scope?.includes('gmail.readonly'),
+        isOnlyMetadata: parsedTokens.scope === 'https://www.googleapis.com/auth/gmail.metadata'
+      }
+    }
+
+    res.json({
+      success: true,
+      data: debugInfo
+    })
+  } catch (error) {
+    console.error('Error debugging tokens:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to debug tokens'
+    })
+  }
+})
+
 // POST /api/gmail/revoke - Revoke Gmail authentication
 router.post('/revoke', async (req, res) => {
   try {

@@ -97,20 +97,36 @@ export class GmailService {
 
       const tokens = JSON.parse(tokenRow.value) as StoredToken
       
-      // Debug: Log token scope information
-      console.log('Loaded tokens with scope:', tokens.scope)
-      console.log('Token expiry:', new Date(tokens.expiry_date))
-      console.log('Current time:', new Date())
+      // Debug: Log token scope information using proper logger
+      const tokenInfo = {
+        scope: tokens.scope,
+        tokenExpiry: new Date(tokens.expiry_date),
+        currentTime: new Date(),
+        isExpired: tokens.expiry_date && tokens.expiry_date <= Date.now()
+      }
+      console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2))
       
       // Validate scope to ensure we have the correct permissions
       const requiredScope = 'https://www.googleapis.com/auth/gmail.readonly'
       const hasMetadataScope = tokens.scope && tokens.scope.includes('gmail.metadata')
       const hasReadonlyScope = tokens.scope && tokens.scope.includes('gmail.readonly')
       
-      console.log('Scope validation:', { hasMetadataScope, hasReadonlyScope })
+      // More comprehensive scope validation
+      const scopeValidation = {
+        tokenScope: tokens.scope,
+        hasMetadataScope,
+        hasReadonlyScope,
+        isIncompatible: hasMetadataScope && !hasReadonlyScope,
+        hasOnlyMetadata: tokens.scope === 'https://www.googleapis.com/auth/gmail.metadata'
+      }
+      console.log('Scope validation:', JSON.stringify(scopeValidation, null, 2))
       
-      if (hasMetadataScope && !hasReadonlyScope) {
-        console.log('Detected incompatible scope (metadata only). Forcing re-authentication...')
+      // Check for any metadata scope without readonly scope OR only metadata scope  
+      if ((hasMetadataScope && !hasReadonlyScope) || scopeValidation.hasOnlyMetadata) {
+        console.log('🚨 DETECTED INCOMPATIBLE SCOPE - Forcing re-authentication')
+        console.log('Token scope:', tokens.scope)
+        console.log('Required scope:', requiredScope)
+        
         // Clear the stored tokens to force re-authentication with correct scope
         await this.revokeAuth()
         return false
@@ -133,12 +149,13 @@ export class GmailService {
         
         // Debug: Log credentials that were set
         const credentials = this.oauth2Client.credentials
-        console.log('Set OAuth credentials:', {
+        const credentialInfo = {
           has_access_token: !!credentials.access_token,
           has_refresh_token: !!credentials.refresh_token,
           scope: credentials.scope,
           expiry_date: credentials.expiry_date ? new Date(credentials.expiry_date) : 'none'
-        })
+        }
+        console.log('Set OAuth credentials:', JSON.stringify(credentialInfo, null, 2))
       }
 
       return true
@@ -245,14 +262,15 @@ export class GmailService {
       if (labelIds && labelIds.length > 0) params.labelIds = labelIds
 
       // Debug: Log API call parameters and authentication state
-      console.log('Gmail API listMessages call:', {
+      const apiCallInfo = {
         params: params,
         authState: {
           hasCredentials: !!this.oauth2Client.credentials,
           hasAccessToken: !!this.oauth2Client.credentials?.access_token,
           scope: this.oauth2Client.credentials?.scope
         }
-      })
+      }
+      console.log('Gmail API listMessages call:', JSON.stringify(apiCallInfo, null, 2))
 
       const response = await this.gmail.users.messages.list(params)
       
