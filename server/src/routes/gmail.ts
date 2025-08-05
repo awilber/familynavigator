@@ -109,8 +109,19 @@ router.get('/debug-tokens', async (req, res) => {
     try {
       // Handle encrypted tokens
       const possibleEncrypted = JSON.parse(tokenRow.value)
-      const decrypted = databaseService.decrypt(possibleEncrypted)
-      parsedTokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
+      
+      // Check if it has encryption structure
+      if (possibleEncrypted.encrypted && possibleEncrypted.iv && possibleEncrypted.authTag) {
+        const decrypted = databaseService.decrypt(
+          possibleEncrypted.encrypted,
+          possibleEncrypted.iv,
+          possibleEncrypted.authTag
+        )
+        parsedTokens = decrypted ? JSON.parse(decrypted) : possibleEncrypted
+      } else {
+        // Not encrypted, use directly
+        parsedTokens = possibleEncrypted
+      }
     } catch (parseError: any) {
       return res.json({
         success: true,

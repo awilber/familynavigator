@@ -100,9 +100,20 @@ export class GmailService {
       try {
         // First try to parse as encrypted data
         const possibleEncrypted = JSON.parse(tokenRow.value)
-        const decrypted = databaseService.decrypt(possibleEncrypted)
-        tokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
-      } catch (decryptError) {
+        
+        // Check if it has encryption structure
+        if (possibleEncrypted.encrypted && possibleEncrypted.iv && possibleEncrypted.authTag) {
+          const decrypted = databaseService.decrypt(
+            possibleEncrypted.encrypted,
+            possibleEncrypted.iv,
+            possibleEncrypted.authTag
+          )
+          tokens = decrypted ? JSON.parse(decrypted) : JSON.parse(tokenRow.value)
+        } else {
+          // Not encrypted, use directly
+          tokens = possibleEncrypted
+        }
+      } catch (decryptError: any) {
         // Fallback to direct parsing if decryption fails (for backward compatibility)
         console.log('Decryption failed, trying direct parse:', decryptError.message)
         tokens = JSON.parse(tokenRow.value)
