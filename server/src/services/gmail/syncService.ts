@@ -280,13 +280,20 @@ export class GmailSyncService {
       const listStartTime = Date.now()
       
       // Get initial message list to estimate total
-      const initialList = await gmailService.listMessages({
-        query,
-        maxResults: 1
-      })
+      let initialList: any
+      try {
+        initialList = await gmailService.listMessages({
+          query,
+          maxResults: 1
+        })
 
-      this.logApiCall('/gmail/v1/users/me/messages', 'GET', 200, 
-        { resultSizeEstimate: initialList.resultSizeEstimate }, Date.now() - listStartTime)
+        this.logApiCall('/gmail/v1/users/me/messages', 'GET', 200, 
+          { resultSizeEstimate: initialList.resultSizeEstimate }, Date.now() - listStartTime)
+      } catch (listError: any) {
+        this.logApiCall('/gmail/v1/users/me/messages', 'GET', listError.status || 500, 
+          listError.response?.data || listError.message, Date.now() - listStartTime)
+        throw listError
+      }
 
       this.progress.totalMessages = Math.min(
         initialList.resultSizeEstimate || 0,

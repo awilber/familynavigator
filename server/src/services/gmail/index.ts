@@ -97,10 +97,17 @@ export class GmailService {
 
       const tokens = JSON.parse(tokenRow.value) as StoredToken
       
+      // Debug: Log token scope information
+      console.log('Loaded tokens with scope:', tokens.scope)
+      console.log('Token expiry:', new Date(tokens.expiry_date))
+      console.log('Current time:', new Date())
+      
       // Validate scope to ensure we have the correct permissions
       const requiredScope = 'https://www.googleapis.com/auth/gmail.readonly'
       const hasMetadataScope = tokens.scope && tokens.scope.includes('gmail.metadata')
       const hasReadonlyScope = tokens.scope && tokens.scope.includes('gmail.readonly')
+      
+      console.log('Scope validation:', { hasMetadataScope, hasReadonlyScope })
       
       if (hasMetadataScope && !hasReadonlyScope) {
         console.log('Detected incompatible scope (metadata only). Forcing re-authentication...')
@@ -122,6 +129,15 @@ export class GmailService {
           scope: tokens.scope,
           token_type: tokens.token_type,
           expiry_date: tokens.expiry_date
+        })
+        
+        // Debug: Log credentials that were set
+        const credentials = this.oauth2Client.credentials
+        console.log('Set OAuth credentials:', {
+          has_access_token: !!credentials.access_token,
+          has_refresh_token: !!credentials.refresh_token,
+          scope: credentials.scope,
+          expiry_date: credentials.expiry_date ? new Date(credentials.expiry_date) : 'none'
         })
       }
 
@@ -228,6 +244,16 @@ export class GmailService {
       if (pageToken) params.pageToken = pageToken
       if (labelIds && labelIds.length > 0) params.labelIds = labelIds
 
+      // Debug: Log API call parameters and authentication state
+      console.log('Gmail API listMessages call:', {
+        params: params,
+        authState: {
+          hasCredentials: !!this.oauth2Client.credentials,
+          hasAccessToken: !!this.oauth2Client.credentials?.access_token,
+          scope: this.oauth2Client.credentials?.scope
+        }
+      })
+
       const response = await this.gmail.users.messages.list(params)
       
       return {
@@ -235,9 +261,27 @@ export class GmailService {
         nextPageToken: response.data.nextPageToken,
         resultSizeEstimate: response.data.resultSizeEstimate || 0
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error listing messages:', error)
-      throw new Error('Failed to list Gmail messages')
+      
+      // Log detailed error information for debugging
+      const errorDetails = {
+        message: error.message,
+        status: error.status || error.code,
+        statusText: error.statusText,
+        response: error.response?.data,
+        config: {
+          method: error.config?.method,
+          url: error.config?.url,
+          params: error.config?.params
+        }
+      }
+      console.error('Gmail API Error Details:', JSON.stringify(errorDetails, null, 2))
+      
+      // Preserve the original error for better debugging
+      const preservedError = new Error(`Failed to list Gmail messages: ${error.message}`)
+      preservedError.cause = error
+      throw preservedError
     }
   }
 
