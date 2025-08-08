@@ -14,46 +14,59 @@ router.get('/analysis', async (req, res) => {
     const dbPath = require('path').join(__dirname, '..', '..', 'data', 'communications.db')
     const db = new Database(dbPath)
     
-    // Extract all email addresses from To/From/CC/BCC fields
+    // Extract all email addresses from metadata JSON (to/cc/bcc) and sender/recipient fields
     const query = `
-      WITH all_emails AS (
-        -- From field (sender addresses)
-        SELECT 
-          sender_email as email_address,
-          sender_name as display_name,
+      WITH email_extractions AS (
+        -- Extract To addresses from metadata JSON
+        SELECT DISTINCT
+          TRIM(REPLACE(REPLACE(json_extract(metadata, '$.to[0]'), '"', ''), '<', '')) as email_address,
           direction,
           timestamp,
-          'sender' as address_type
+          'to' as address_type
         FROM communications 
-        WHERE sender_email IS NOT NULL 
+        WHERE source = 'gmail'
+          AND json_extract(metadata, '$.to[0]') IS NOT NULL
+          AND json_extract(metadata, '$.to[0]') != ''
+          AND json_extract(metadata, '$.to[0]') NOT LIKE '%example.com%'
+          AND json_extract(metadata, '$.to[0]') NOT LIKE '%lawfirm.com%'
+          AND json_extract(metadata, '$.to[0]') NOT LIKE '%familycourt.gov%'
+          AND json_extract(metadata, '$.to[0]') NOT LIKE '%mediationservices.com%'
+        
+        UNION
+        
+        -- Extract CC addresses from metadata JSON (first CC address)
+        SELECT DISTINCT
+          TRIM(REPLACE(REPLACE(json_extract(metadata, '$.cc[0]'), '"', ''), '<', '')) as email_address,
+          direction,
+          timestamp,
+          'cc' as address_type
+        FROM communications 
+        WHERE source = 'gmail'
+          AND json_extract(metadata, '$.cc[0]') IS NOT NULL
+          AND json_extract(metadata, '$.cc[0]') != ''
+          AND json_extract(metadata, '$.cc[0]') NOT LIKE '%example.com%'
+          AND json_extract(metadata, '$.cc[0]') NOT LIKE '%lawfirm.com%'
+        
+        UNION
+        
+        -- Extract sender addresses
+        SELECT DISTINCT
+          sender_email as email_address,
+          direction,
+          timestamp,
+          'from' as address_type
+        FROM communications 
+        WHERE source = 'gmail'
+          AND sender_email IS NOT NULL 
           AND sender_email != ''
           AND sender_email NOT LIKE '%example.com'
           AND sender_email NOT LIKE '%@lawfirm.com'
           AND sender_email NOT LIKE '%@familycourt.gov'
           AND sender_email NOT LIKE '%@mediationservices.com'
-          AND source = 'gmail'
-        
-        UNION ALL
-        
-        -- To field (recipient addresses)  
-        SELECT 
-          recipient_email as email_address,
-          recipient_name as display_name,
-          CASE WHEN direction = 'outgoing' THEN 'incoming' ELSE 'outgoing' END as direction,
-          timestamp,
-          'recipient' as address_type
-        FROM communications 
-        WHERE recipient_email IS NOT NULL 
-          AND recipient_email != ''
-          AND recipient_email NOT LIKE '%example.com'
-          AND recipient_email NOT LIKE '%@lawfirm.com'
-          AND recipient_email NOT LIKE '%@familycourt.gov'
-          AND recipient_email NOT LIKE '%@mediationservices.com'
-          AND source = 'gmail'
       )
       SELECT 
-        email_address,
-        COALESCE(MAX(display_name), email_address) as display_name,
+        LOWER(email_address) as email_address,
+        email_address as display_name,
         COUNT(*) as total_message_count,
         SUM(CASE WHEN direction = 'incoming' THEN 1 ELSE 0 END) as incoming_count,
         SUM(CASE WHEN direction = 'outgoing' THEN 1 ELSE 0 END) as outgoing_count,
@@ -73,8 +86,12 @@ router.get('/analysis', async (req, res) => {
           ELSE 'rarely'
         END as communication_frequency,
         SUBSTR(email_address, INSTR(email_address, '@') + 1) as domain
-      FROM all_emails
-      GROUP BY email_address
+      FROM email_extractions
+      WHERE email_address IS NOT NULL 
+        AND email_address != ''
+        AND email_address LIKE '%@%'
+        AND LENGTH(email_address) > 3
+      GROUP BY LOWER(email_address)
       HAVING COUNT(*) > 0
       ORDER BY ${sortBy === 'frequency' ? 'total_message_count DESC' : 'MAX(timestamp) DESC'}
     `
