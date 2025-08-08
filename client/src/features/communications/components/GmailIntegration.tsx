@@ -687,34 +687,6 @@ const GmailIntegration: React.FC = () => {
             </Card>
           )}
 
-          {/* Quick Filters */}
-          <Card sx={{ mb: 3, backgroundColor: 'background.default' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Email Filter
-              </Typography>
-              <TextField
-                fullWidth
-                label="Filter Messages"
-                value={syncOptions.query}
-                onChange={(e) => setSyncOptions({
-                  ...syncOptions,
-                  query: e.target.value
-                })}
-                placeholder="e.g., from:person@example.com OR to:person@example.com"
-                helperText="Gmail search syntax: from:email@domain.com, to:email@domain.com, (from:email1 OR to:email2)"
-                variant="outlined"
-                sx={{ mb: 2 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                <strong>Examples:</strong><br/>
-                • <code>from:john@example.com</code> - Messages from John<br/>
-                • <code>to:mary@example.com</code> - Messages to Mary<br/>
-                • <code>(from:john@example.com OR to:john@example.com)</code> - Any messages involving John<br/>
-                • <code>from:john@example.com OR from:mary@example.com</code> - Messages from John or Mary
-              </Typography>
-            </CardContent>
-          </Card>
 
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>

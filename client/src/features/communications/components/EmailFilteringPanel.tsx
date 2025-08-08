@@ -6,530 +6,412 @@ import {
   Typography,
   TextField,
   Button,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
+  Grid,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Tabs,
-  Tab,
+  CircularProgress,
   Alert,
-  LinearProgress,
   Tooltip,
-  Badge
+  Divider,
+  ButtonGroup
 } from '@mui/material'
 import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
+  FilterList as FilterIcon,
+  Clear as ClearIcon,
+  FileDownload as ExportIcon,
   Search as SearchIcon,
-  FilterList as FilterListIcon,
-  AutoFixHigh as AutoIcon,
-  TrendingUp as TrendingIcon,
-  Security as SecurityIcon,
-  Schedule as ScheduleIcon,
-  Email as EmailIcon
+  Sort as SortIcon,
+  Email as EmailIcon,
+  AccessTime as TimeIcon
 } from '@mui/icons-material'
 
-interface EmailAddressMetrics {
+interface EmailAddress {
   email_address: string
-  domain: string
+  display_name: string
   total_message_count: number
   incoming_count: number
   outgoing_count: number
   first_seen: string
   last_seen: string
-  recent_activity_score: number
-  communication_frequency: 'daily' | 'weekly' | 'monthly' | 'sporadic'
   legal_importance_score: number
-  display_name?: string
-  contact_id?: number
+  communication_frequency: 'daily' | 'weekly' | 'monthly' | 'rarely'
+  domain: string
 }
 
-interface FilterPattern {
-  id?: number
-  pattern: string
-  patternType: 'exact' | 'domain' | 'wildcard' | 'regex'
-  appliesToFields: string[]
-  isActive: boolean
-  legalRelevance: 'high' | 'medium' | 'low'
-  matchCount: number
-  estimatedMatches?: number
+interface EmailFilteringPanelProps {
+  onFilterApply?: (query: string) => void
+  onFilterClear?: () => void
+  onExportResults?: () => void
 }
 
-interface FrequencyAnalysis {
-  topAddresses: EmailAddressMetrics[]
-  topDomains: Array<{
-    domain: string
-    count: number
-    addresses: string[]
-  }>
-  recentlyActive: EmailAddressMetrics[]
-  legallyRelevant: EmailAddressMetrics[]
-  sortBy: string
-}
-
-export const EmailFilteringPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(0)
-  const [frequencyData, setFrequencyData] = useState<FrequencyAnalysis | null>(null)
-  const [activeFilters, setActiveFilters] = useState<FilterPattern[]>([])
-  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(new Set())
-  const [customPattern, setCustomPattern] = useState('')
-  const [sortBy, setSortBy] = useState<'frequency' | 'alphabetical' | 'recent' | 'legal_relevance'>('frequency')
-  const [loading, setLoading] = useState(false)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [newPatternType, setNewPatternType] = useState<'exact' | 'domain' | 'wildcard' | 'regex'>('exact')
-  const [newPatternFields, setNewPatternFields] = useState<string[]>(['from', 'to', 'cc'])
+const EmailFilteringPanel: React.FC<EmailFilteringPanelProps> = ({
+  onFilterApply,
+  onFilterClear,
+  onExportResults
+}) => {
+  // Console log to verify component is being called
+  console.log('🔍 EmailFilteringPanel component is being rendered!');
+  
+  const [emailAddresses, setEmailAddresses] = useState<EmailAddress[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<string>('frequency')
+  const [query, setQuery] = useState<string>('')
+  const [applying, setApplying] = useState(false)
 
   useEffect(() => {
-    loadFrequencyAnalysis()
-    loadActiveFilters()
+    loadEmailAddresses()
   }, [sortBy])
 
-  const loadFrequencyAnalysis = async () => {
-    setLoading(true)
+  const loadEmailAddresses = async () => {
     try {
+      setLoading(true)
+      setError(null)
+      
       const response = await fetch(`/api/email-filtering/analysis?sortBy=${sortBy}`)
       const data = await response.json()
+      
       if (data.success) {
-        setFrequencyData(data.data)
+        setEmailAddresses(data.data.emails || [])
+      } else {
+        setError(data.error || 'Failed to load email addresses')
       }
-    } catch (error) {
-      console.error('Failed to load frequency analysis:', error)
+    } catch (err) {
+      setError('Network error loading email addresses')
+      console.error('Error loading email addresses:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadActiveFilters = async () => {
-    try {
-      const response = await fetch('/api/email-filtering/patterns')
-      const data = await response.json()
-      if (data.success) {
-        setActiveFilters(data.data)
-      }
-    } catch (error) {
-      console.error('Failed to load active filters:', error)
-    }
+  const handleEmailClick = (emailAddress: string) => {
+    const newQuery = `(from:${emailAddress} OR to:${emailAddress})`
+    setQuery(newQuery)
   }
 
-  const handleAddressToggle = (email: string) => {
-    const newSelected = new Set(selectedAddresses)
-    if (newSelected.has(email)) {
-      newSelected.delete(email)
-    } else {
-      newSelected.add(email)
-    }
-    setSelectedAddresses(newSelected)
-  }
-
-  const addSelectedAddresses = async () => {
-    setLoading(true)
+  const handleApplyFilter = async () => {
+    if (!query.trim()) return
+    
     try {
-      const patterns = Array.from(selectedAddresses).map(email => ({
-        pattern: email,
-        patternType: 'exact',
-        fields: ['from', 'to', 'cc', 'bcc'],
-        legalRelevance: 'high',
-        createdBy: 'user_selection'
-      }))
-
-      const response = await fetch('/api/email-filtering/patterns/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patterns })
-      })
-
-      if (response.ok) {
-        setSelectedAddresses(new Set())
-        await loadActiveFilters()
-      }
-    } catch (error) {
-      console.error('Failed to add patterns:', error)
+      setApplying(true)
+      await onFilterApply?.(query)
+    } catch (err) {
+      console.error('Error applying filter:', err)
     } finally {
-      setLoading(false)
+      setApplying(false)
     }
   }
 
-  const addCustomPattern = async () => {
-    if (!customPattern.trim()) return
+  const handleClearFilter = () => {
+    setQuery('')
+    onFilterClear?.()
+  }
 
-    setLoading(true)
-    try {
-      const response = await fetch('/api/email-filtering/patterns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pattern: customPattern,
-          patternType: newPatternType,
-          fields: newPatternFields,
-          legalRelevance: 'high',
-          createdBy: 'user_manual'
-        })
-      })
-
-      if (response.ok) {
-        setCustomPattern('')
-        setShowAddDialog(false)
-        await loadActiveFilters()
-      }
-    } catch (error) {
-      console.error('Failed to add custom pattern:', error)
-    } finally {
-      setLoading(false)
+  const getFrequencyColor = (frequency: string) => {
+    switch (frequency) {
+      case 'daily': return 'success'
+      case 'weekly': return 'warning'
+      case 'monthly': return 'info'
+      case 'rarely': return 'default'
+      default: return 'default'
     }
   }
 
-  const removeFilter = async (patternId: number) => {
-    try {
-      await fetch(`/api/email-filtering/patterns/${patternId}`, { method: 'DELETE' })
-      await loadActiveFilters()
-    } catch (error) {
-      console.error('Failed to remove filter:', error)
-    }
+  const formatLastSeen = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+    return date.toLocaleDateString()
   }
 
-  const suggestPatterns = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/email-filtering/suggestions')
-      const data = await response.json()
-      if (data.success && data.data.length > 0) {
-        // Add top 3 suggested patterns automatically
-        const topSuggestions = data.data.slice(0, 3)
-        const response2 = await fetch('/api/email-filtering/patterns/batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            patterns: topSuggestions.map((s: any) => ({
-              pattern: s.pattern,
-              patternType: s.patternType,
-              fields: ['from', 'to', 'cc', 'bcc'],
-              legalRelevance: 'medium',
-              createdBy: 'auto_suggestion'
-            }))
-          })
-        })
-        
-        if (response2.ok) {
-          await loadActiveFilters()
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get pattern suggestions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const renderFrequencyTab = () => {
-    if (!frequencyData) return <LinearProgress />
-
-    // Use the emails array from the API response, with fallback to empty array
-    const emails = frequencyData.emails || []
-    const dataToShow = emails // All tabs show the same data for now
-
-    return (
-      <Box>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Sort By</InputLabel>
-            <Select
-              value={sortBy}
-              label="Sort By"
-              onChange={(e) => setSortBy(e.target.value as any)}
-            >
-              <MenuItem value="frequency">Message Count</MenuItem>
-              <MenuItem value="recent">Recent Activity</MenuItem>
-              <MenuItem value="legal_relevance">Legal Relevance</MenuItem>
-              <MenuItem value="alphabetical">Alphabetical</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Button 
-            startIcon={<AutoIcon />}
-            onClick={suggestPatterns}
-            disabled={loading}
-          >
-            Auto-Suggest
-          </Button>
-          
-          <Badge badgeContent={selectedAddresses.size} color="primary">
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={addSelectedAddresses}
-              disabled={selectedAddresses.size === 0 || loading}
-            >
-              Add Selected ({selectedAddresses.size})
-            </Button>
-          </Badge>
-        </Box>
-
-        {dataToShow.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
-              No email addresses found. 
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Connect Gmail and sync your messages to see email filtering options.
-            </Typography>
-          </Box>
-        ) : (
-          <List dense>
-            {dataToShow.map((address) => (
-              <ListItem 
-                key={address.email_address} 
-                sx={{ 
-                  py: 0.5,
-                  '&:hover': { backgroundColor: 'action.hover' },
-                  borderRadius: 1,
-                  mb: 0.5
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  <Checkbox
-                    size="small"
-                    checked={selectedAddresses.has(address.email_address)}
-                    onChange={() => handleAddressToggle(address.email_address)}
-                  />
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1,
-                      flexWrap: 'wrap'
-                    }}>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          fontWeight: 'medium',
-                          color: 'text.primary'
-                        }}
-                      >
-                        {address.display_name ? 
-                          `${address.display_name} <${address.email_address}>` : 
-                          address.email_address
-                        }
-                      </Typography>
-                      
-                      <Typography 
-                        variant="caption" 
-                        color="text.secondary"
-                        sx={{ ml: 'auto', whiteSpace: 'nowrap' }}
-                      >
-                        {address.total_message_count} messages • 
-                        Last: {new Date(address.last_seen).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}
-                      </Typography>
-                      
-                      {address.legal_importance_score > 7 && (
-                        <Chip 
-                          label="High" 
-                          size="small" 
-                          color="error"
-                          sx={{ height: 20, fontSize: '0.625rem' }}
-                        />
-                      )}
-                      
-                      {address.communication_frequency === 'daily' && (
-                        <Chip 
-                          label="Daily" 
-                          size="small" 
-                          color="success"
-                          sx={{ height: 20, fontSize: '0.625rem' }}
-                        />
-                      )}
-                    </Box>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Box>
-    )
-  }
-
-  const renderActiveFiltersTab = () => (
-    <Box>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={() => setShowAddDialog(true)}
-        >
-          Add Custom Pattern
-        </Button>
-        <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-          {activeFilters.length} active filters
-        </Typography>
-      </Box>
-
-      {activeFilters.length === 0 ? (
-        <Alert severity="info">
-          No filters configured. All emails will be synced and displayed.
-        </Alert>
-      ) : (
-        <List>
-          {activeFilters.map((filter) => (
-            <ListItem key={filter.id}>
-              <ListItemIcon>
-                <EmailIcon color={filter.legalRelevance === 'high' ? 'error' : 'primary'} />
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="subtitle2">
-                      {filter.pattern}
-                    </Typography>
-                    <Chip 
-                      label={filter.patternType.toUpperCase()} 
-                      size="small" 
-                      variant="outlined"
-                    />
-                    <Chip 
-                      label={filter.legalRelevance} 
-                      size="small"
-                      color={filter.legalRelevance === 'high' ? 'error' : 'default'}
-                    />
-                  </Box>
-                }
-                secondary={
-                  <Typography variant="caption" color="text.secondary">
-                    Fields: {filter.appliesToFields.join(', ')} • 
-                    Matches: {filter.matchCount}
-                    {filter.estimatedMatches && ` (Est. ${filter.estimatedMatches})`}
-                  </Typography>
-                }
-              />
-              <IconButton 
-                onClick={() => removeFilter(filter.id!)}
-                color="error"
-                size="small"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItem>
-          ))}
-        </List>
-      )}
-    </Box>
-  )
+  const sortButtons = [
+    { key: 'frequency', label: 'Frequency', icon: <SortIcon /> },
+    { key: 'recent', label: 'Recent', icon: <TimeIcon /> },
+    { key: 'alphabetical', label: 'A-Z', icon: <SortIcon /> },
+    { key: 'legal_relevance', label: 'Legal', icon: <FilterIcon /> }
+  ]
 
   return (
-    <Card sx={{ mt: 2, flex: '0 0 auto' }}>
-      <CardContent sx={{ maxHeight: '50vh', overflow: 'auto' }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FilterListIcon />
-          Email Address Filtering
-        </Typography>
+    <Card sx={{ mb: 3, minHeight: 500 }}>
+      <CardContent sx={{ minHeight: 450 }}>
+        {/* DEBUG: Verification div - remove after testing */}
+        <div style={{ 
+          backgroundColor: '#4caf50', 
+          color: 'white', 
+          padding: '8px', 
+          margin: '8px 0',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          borderRadius: '4px'
+        }}>
+          ✅ EmailFilteringPanel loaded successfully
+        </div>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <FilterIcon sx={{ color: 'primary.main' }} />
+          <Typography variant="h6" fontWeight="bold">
+            Email Address Filtering
+          </Typography>
+        </Box>
 
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
-          <Tab 
-            icon={<TrendingIcon />} 
-            label="Most Frequent" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<ScheduleIcon />} 
-            label="Recent Activity" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<SecurityIcon />} 
-            label="Legally Relevant" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<FilterListIcon />} 
-            label={`Active Filters (${activeFilters.length})`}
-            iconPosition="start"
-          />
-        </Tabs>
+        <Grid container spacing={3}>
+          {/* Left Panel: Email Address Discovery */}
+          <Grid item xs={12} md={5}>
+            <Card variant="outlined" sx={{ height: '100%', minHeight: 400 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Discovered Email Addresses
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {emailAddresses.length} addresses
+                  </Typography>
+                </Box>
 
-        {loading && <LinearProgress sx={{ mb: 2 }} />}
+                {/* Sort Options */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Sort by:
+                  </Typography>
+                  <ButtonGroup size="small" variant="outlined">
+                    {sortButtons.map((button) => (
+                      <Button
+                        key={button.key}
+                        onClick={() => setSortBy(button.key)}
+                        variant={sortBy === button.key ? 'contained' : 'outlined'}
+                        startIcon={button.icon}
+                        sx={{ fontSize: '0.75rem' }}
+                      >
+                        {button.label}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+                </Box>
 
-        {activeTab < 3 ? renderFrequencyTab() : renderActiveFiltersTab()}
-
-        {/* Add Custom Pattern Dialog */}
-        <Dialog open={showAddDialog} onClose={() => setShowAddDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Add Custom Filter Pattern</DialogTitle>
-          <DialogContent>
-            <TextField
-              fullWidth
-              label="Email Pattern"
-              value={customPattern}
-              onChange={(e) => setCustomPattern(e.target.value)}
-              placeholder="john@example.com, @lawfirm.com, john.*@*.com"
-              helperText="Examples: exact email, @domain.com, or wildcards with * and ?"
-              sx={{ mb: 2, mt: 1 }}
-            />
-            
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Pattern Type</InputLabel>
-              <Select
-                value={newPatternType}
-                label="Pattern Type"
-                onChange={(e) => setNewPatternType(e.target.value as any)}
-              >
-                <MenuItem value="exact">Exact Email Match</MenuItem>
-                <MenuItem value="domain">Domain Match (@domain.com)</MenuItem>
-                <MenuItem value="wildcard">Wildcard Pattern (*)</MenuItem>
-                <MenuItem value="regex">Regular Expression</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Typography variant="subtitle2" gutterBottom>
-              Apply to Email Fields:
-            </Typography>
-            <FormGroup row>
-              {['from', 'to', 'cc', 'bcc'].map(field => (
-                <FormControlLabel
-                  key={field}
-                  control={
-                    <Checkbox
-                      checked={newPatternFields.includes(field)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewPatternFields([...newPatternFields, field])
-                        } else {
-                          setNewPatternFields(newPatternFields.filter(f => f !== field))
+                {/* Email Address List */}
+                <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : error ? (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {error}
+                    </Alert>
+                  ) : emailAddresses.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>
+                      No email addresses found. Try syncing some Gmail messages first.
+                    </Typography>
+                  ) : (
+                    emailAddresses.map((email) => (
+                      <Tooltip
+                        key={email.email_address}
+                        title={
+                          <Box>
+                            <Typography variant="body2">
+                              <strong>{email.total_message_count}</strong> total messages
+                            </Typography>
+                            <Typography variant="body2">
+                              {email.incoming_count} incoming, {email.outgoing_count} outgoing
+                            </Typography>
+                            <Typography variant="body2">
+                              First seen: {new Date(email.first_seen).toLocaleDateString()}
+                            </Typography>
+                            <Typography variant="body2">
+                              Last seen: {formatLastSeen(email.last_seen)}
+                            </Typography>
+                            <Typography variant="body2">
+                              Legal importance: {email.legal_importance_score}/10
+                            </Typography>
+                          </Box>
                         }
-                      }}
-                    />
-                  }
-                  label={field.toUpperCase()}
+                        arrow
+                      >
+                        <Box
+                          onClick={() => handleEmailClick(email.email_address)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            p: 1.5,
+                            mb: 1,
+                            borderRadius: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              borderColor: 'primary.main',
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                                ? 'rgba(25, 118, 210, 0.08)' 
+                                : 'rgba(25, 118, 210, 0.04)'
+                            }
+                          }}
+                        >
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography
+                                variant="body2"
+                                fontWeight="medium"
+                                sx={{ 
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {email.display_name}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                size="small"
+                                label={`${email.total_message_count} msgs`}
+                                color={getFrequencyColor(email.communication_frequency) as any}
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                              <Typography variant="caption" color="text.secondary">
+                                {formatLastSeen(email.last_seen)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      </Tooltip>
+                    ))
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Center: Quick Actions */}
+          <Grid item xs={12} md={2}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'row', md: 'column' },
+              gap: 2,
+              height: '100%',
+              minHeight: 400,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Divider 
+                orientation={{ xs: 'horizontal', md: 'vertical' }}
+                sx={{ display: { xs: 'block', md: 'block' } }}
+              />
+              
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'row', md: 'column' },
+                gap: 1
+              }}>
+                <Button
+                  variant="contained"
+                  startIcon={applying ? <CircularProgress size={16} /> : <SearchIcon />}
+                  onClick={handleApplyFilter}
+                  disabled={!query.trim() || applying}
+                  size="small"
+                  fullWidth
+                >
+                  {applying ? 'Applying...' : 'Apply Filter'}
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  startIcon={<ClearIcon />}
+                  onClick={handleClearFilter}
+                  disabled={!query.trim()}
+                  size="small"
+                  fullWidth
+                >
+                  Clear All
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  startIcon={<ExportIcon />}
+                  onClick={onExportResults}
+                  disabled={!query.trim()}
+                  size="small"
+                  fullWidth
+                >
+                  Export
+                </Button>
+              </Box>
+              
+              <Divider 
+                orientation={{ xs: 'horizontal', md: 'vertical' }}
+                sx={{ display: { xs: 'block', md: 'block' } }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Right Panel: Gmail Query Builder */}
+          <Grid item xs={12} md={5}>
+            <Card variant="outlined" sx={{ height: '100%', minHeight: 400 }}>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Gmail Query Builder
+                </Typography>
+                
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Filter Query"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="e.g., from:person@example.com OR to:person@example.com"
+                  helperText="Click an email address on the left or build your own Gmail search query"
+                  variant="outlined"
+                  sx={{ mb: 2 }}
                 />
-              ))}
-            </FormGroup>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button 
-              onClick={addCustomPattern}
-              variant="contained"
-              disabled={!customPattern.trim() || newPatternFields.length === 0}
-            >
-              Add Pattern
-            </Button>
-          </DialogActions>
-        </Dialog>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Gmail Search Operators:</strong>
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                    {['from:', 'to:', 'subject:', 'has:', 'in:', 'is:', 'after:', 'before:'].map((operator) => (
+                      <Chip
+                        key={operator}
+                        label={operator}
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setQuery(prev => prev + operator)}
+                        sx={{ fontSize: '0.7rem', cursor: 'pointer' }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <strong>Examples:</strong>
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="caption" component="div" color="text.secondary">
+                      • <code>from:john@example.com</code> - Messages from John
+                    </Typography>
+                    <Typography variant="caption" component="div" color="text.secondary">
+                      • <code>to:mary@example.com</code> - Messages to Mary
+                    </Typography>
+                    <Typography variant="caption" component="div" color="text.secondary">
+                      • <code>(from:john@example.com OR to:john@example.com)</code> - Any messages involving John
+                    </Typography>
+                    <Typography variant="caption" component="div" color="text.secondary">
+                      • <code>subject:"court date" has:attachment</code> - Court emails with attachments
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </CardContent>
     </Card>
   )

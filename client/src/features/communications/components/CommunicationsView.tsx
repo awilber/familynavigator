@@ -140,7 +140,20 @@ const CommunicationsView: React.FC = () => {
       <GmailIntegration />
 
       {/* Email Filtering Panel */}
-      <EmailFilteringPanel />
+      <EmailFilteringPanel 
+        onFilterApply={(query) => {
+          console.log('Applying filter:', query)
+          // TODO: Integrate with Communication Timeline
+        }}
+        onFilterClear={() => {
+          console.log('Clearing filters')
+          // TODO: Integrate with Communication Timeline
+        }}
+        onExportResults={() => {
+          console.log('Exporting results')
+          // TODO: Implement export functionality
+        }}
+      />
 
       {/* Main Content */}
       <Grid container spacing={3} sx={{ flex: '1 1 auto', minHeight: 400 }}>
