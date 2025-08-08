@@ -22,6 +22,7 @@ import CommunicationTimeline from './CommunicationTimeline'
 import CommunicationTrendsChart from './CommunicationTrendsChart'
 import GmailIntegration from './GmailIntegration'
 import EmailFilteringPanel from './EmailFilteringPanel'
+import PeopleAndCommunications from './PeopleAndCommunications'
 import { Contact, CommunicationStats } from '../types'
 import { communicationsApi } from '../services/api'
 
@@ -178,7 +179,7 @@ const CommunicationsView: React.FC = () => {
       {/* Gmail Integration */}
       <GmailIntegration />
 
-      {/* Email Filtering Panel */}
+      {/* Email Filtering Panel - REPLACED WITH UNIFIED PANEL
       <EmailFilteringPanel 
         onFilterApply={(query) => {
           console.log('Applying filter:', query)
@@ -193,20 +194,25 @@ const CommunicationsView: React.FC = () => {
           // TODO: Implement export functionality
         }}
       />
+      */}
 
       {/* Main Content */}
       <Grid container spacing={3} sx={{ flex: '1 1 auto', minHeight: 400 }}>
-        {/* Contacts List */}
+        {/* Unified People & Communications Panel */}
         <Grid item xs={12} md={4}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom>
-              Contacts
-            </Typography>
-            <ContactsList
-              onContactSelect={setSelectedContact}
-              selectedContactId={selectedContact?.id}
-            />
-          </Box>
+          <PeopleAndCommunications
+            onContactSelect={setSelectedContact}
+            onFilterApply={(query) => {
+              console.log('Applying filter:', query)
+              setCurrentFilterQuery(query)
+            }}
+            onFilterClear={() => {
+              console.log('Clearing filters')
+              setCurrentFilterQuery(undefined)
+            }}
+            selectedContactId={selectedContact?.id}
+            currentFilterQuery={currentFilterQuery}
+          />
         </Grid>
 
         {/* Communication Analysis */}
