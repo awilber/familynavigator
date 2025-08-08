@@ -409,36 +409,42 @@ export class CommunicationRepository {
     const conditions: string[] = []
     const values: any[] = []
 
-    // Simple Gmail query parser for common operators
-    // from:email - messages from specific email (check both sender fields and metadata)
+    // Handle complex queries like "(from:email OR to:email)" by extracting all from: and to: parts
+    // This handles both simple queries like "from:email" and complex ones like "(from:email OR to:email)"
+    
+    // Extract all from: operators
     const fromMatch = query.match(/from:([^\s\)]+)/g)
+    let fromConditions: string[] = []
     if (fromMatch) {
-      const froms = fromMatch.map(match => match.replace('from:', ''))
-      if (froms.length === 1) {
-        // Search in multiple fields: contact table primary_email, and also check if user is searching for recipient emails
-        // This handles both cases: actual senders and when users want to filter by recipient addresses
-        conditions.push('(ct.primary_email LIKE ? OR JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ?)')
-        values.push(`%${froms[0]}%`, `%${froms[0]}%`, `%${froms[0]}%`)
-      } else if (froms.length > 1) {
-        const fromConditions = froms.map(() => '(ct.primary_email LIKE ? OR JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ?)')
-        conditions.push(`(${fromConditions.join(' OR ')})`)
-        froms.forEach(from => {
-          values.push(`%${from}%`, `%${from}%`, `%${from}%`)
-        })
-      }
+      fromMatch.forEach(match => {
+        const email = match.replace('from:', '')
+        // Search in both sender fields (ct.primary_email) AND recipient fields for comprehensive matching
+        fromConditions.push('(ct.primary_email LIKE ? OR JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ?)')
+        values.push(`%${email}%`, `%${email}%`, `%${email}%`)
+      })
     }
 
-    // to:email - messages to specific email
+    // Extract all to: operators  
     const toMatch = query.match(/to:([^\s\)]+)/g)
+    let toConditions: string[] = []
     if (toMatch) {
-      const tos = toMatch.map(match => match.replace('to:', ''))
-      if (tos.length === 1) {
-        conditions.push('(JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ? OR JSON_EXTRACT(c.metadata, "$.bcc") LIKE ?)')
-        values.push(`%${tos[0]}%`, `%${tos[0]}%`, `%${tos[0]}%`)
-      } else if (tos.length > 1) {
-        const toConditions = tos.map(() => '(JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ? OR JSON_EXTRACT(c.metadata, "$.bcc") LIKE ?)')
-        conditions.push(`(${toConditions.join(' OR ')})`)
-        tos.forEach(to => values.push(`%${to}%`, `%${to}%`, `%${to}%`))
+      toMatch.forEach(match => {
+        const email = match.replace('to:', '')
+        // Search in recipient fields (to/cc/bcc)
+        toConditions.push('(JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ? OR JSON_EXTRACT(c.metadata, "$.bcc") LIKE ?)')
+        values.push(`%${email}%`, `%${email}%`, `%${email}%`)
+      })
+    }
+
+    // Combine all conditions - if the original query has OR, we join with OR; otherwise AND
+    const allConditions = [...fromConditions, ...toConditions]
+    if (allConditions.length > 0) {
+      if (query.includes(' OR ') || query.includes('(')) {
+        // Complex query with OR - join all conditions with OR
+        conditions.push(`(${allConditions.join(' OR ')})`)
+      } else {
+        // Simple query - each condition is separate (implicit AND)
+        conditions.push(...allConditions)
       }
     }
 
@@ -458,7 +464,6 @@ export class CommunicationRepository {
       }
     }
 
-    // Trigger server restart
     return { conditions, values }
   }
 }
