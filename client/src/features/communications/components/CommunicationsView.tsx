@@ -22,6 +22,7 @@ import { communicationsApi } from '../services/api'
 const CommunicationsView: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [stats, setStats] = useState<CommunicationStats | null>(null)
+  const [currentFilterQuery, setCurrentFilterQuery] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     loadStats()
@@ -143,11 +144,11 @@ const CommunicationsView: React.FC = () => {
       <EmailFilteringPanel 
         onFilterApply={(query) => {
           console.log('Applying filter:', query)
-          // TODO: Integrate with Communication Timeline
+          setCurrentFilterQuery(query)
         }}
         onFilterClear={() => {
           console.log('Clearing filters')
-          // TODO: Integrate with Communication Timeline
+          setCurrentFilterQuery(undefined)
         }}
         onExportResults={() => {
           console.log('Exporting results')
@@ -191,6 +192,7 @@ const CommunicationsView: React.FC = () => {
             </Box>
             <CommunicationTimeline
               contactId={selectedContact?.id}
+              filterQuery={currentFilterQuery}
               sx={{ flex: 1 }}
             />
           </Box>

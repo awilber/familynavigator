@@ -27,11 +27,13 @@ import { communicationsApi } from '../services/api'
 
 interface CommunicationTimelineProps {
   contactId?: number
+  filterQuery?: string
   sx?: any
 }
 
 const CommunicationTimeline: React.FC<CommunicationTimelineProps> = ({
   contactId,
+  filterQuery,
   sx
 }) => {
   const [communications, setCommunications] = useState<Communication[]>([])
@@ -43,7 +45,7 @@ const CommunicationTimeline: React.FC<CommunicationTimelineProps> = ({
 
   useEffect(() => {
     loadCommunications(true)
-  }, [contactId, searchQuery])
+  }, [contactId, searchQuery, filterQuery])
 
   const loadCommunications = async (reset = false) => {
     try {
@@ -53,6 +55,7 @@ const CommunicationTimeline: React.FC<CommunicationTimelineProps> = ({
       const filters: SearchFilters = {}
       if (contactId) filters.contact_id = contactId
       if (searchQuery) filters.search_text = searchQuery
+      if (filterQuery) filters.gmail_query = filterQuery
 
       const { communications: newComms, hasMore: more } = await communicationsApi.getCommunications(
         filters,

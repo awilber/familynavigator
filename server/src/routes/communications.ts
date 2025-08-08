@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
     if (req.query.date_to) filters.date_to = req.query.date_to as string
     if (req.query.has_attachments) filters.has_attachments = req.query.has_attachments === 'true'
     if (req.query.search) filters.search_text = req.query.search as string
+    if (req.query.gmail_query) filters.gmail_query = req.query.gmail_query as string
 
     const communications = await communicationRepo.search(filters, limit, offset)
     

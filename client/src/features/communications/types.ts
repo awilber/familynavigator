@@ -57,6 +57,7 @@ export interface SearchFilters {
   date_to?: string
   has_attachments?: boolean
   search_text?: string
+  gmail_query?: string
 }
 
 export interface ApiResponse<T> {

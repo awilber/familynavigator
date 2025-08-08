@@ -37,6 +37,7 @@ export interface SearchFilters {
   date_to?: string
   has_attachments?: boolean
   search_text?: string
+  gmail_query?: string
 }
 
 export class CommunicationRepository {
@@ -237,6 +238,20 @@ export class CommunicationRepository {
       values.push(filters.search_text)
     }
 
+    // Add Gmail query parsing if provided
+    if (filters.gmail_query) {
+      const gmailConditions = this.parseGmailQuery(filters.gmail_query)
+      if (gmailConditions.conditions.length > 0) {
+        const conditionString = gmailConditions.conditions.join(' AND ')
+        if (whereClause) {
+          whereClause += ` AND (${conditionString})`
+        } else {
+          whereClause = `WHERE (${conditionString})`
+        }
+        values.push(...gmailConditions.values)
+      }
+    }
+
     values.push(limit, offset)
 
     const query = `
@@ -388,5 +403,57 @@ export class CommunicationRepository {
       await db.run('ROLLBACK')
       throw error
     }
+  }
+
+  private parseGmailQuery(query: string): { conditions: string[], values: any[] } {
+    const conditions: string[] = []
+    const values: any[] = []
+
+    // Simple Gmail query parser for common operators
+    // from:email - messages from specific email
+    const fromMatch = query.match(/from:([^\s\)]+)/g)
+    if (fromMatch) {
+      const froms = fromMatch.map(match => match.replace('from:', ''))
+      if (froms.length === 1) {
+        conditions.push('JSON_EXTRACT(c.metadata, "$.from") LIKE ?')
+        values.push(`%${froms[0]}%`)
+      } else if (froms.length > 1) {
+        const fromConditions = froms.map(() => 'JSON_EXTRACT(c.metadata, "$.from") LIKE ?')
+        conditions.push(`(${fromConditions.join(' OR ')})`)
+        froms.forEach(from => values.push(`%${from}%`))
+      }
+    }
+
+    // to:email - messages to specific email
+    const toMatch = query.match(/to:([^\s\)]+)/g)
+    if (toMatch) {
+      const tos = toMatch.map(match => match.replace('to:', ''))
+      if (tos.length === 1) {
+        conditions.push('(JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ? OR JSON_EXTRACT(c.metadata, "$.bcc") LIKE ?)')
+        values.push(`%${tos[0]}%`, `%${tos[0]}%`, `%${tos[0]}%`)
+      } else if (tos.length > 1) {
+        const toConditions = tos.map(() => '(JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ? OR JSON_EXTRACT(c.metadata, "$.bcc") LIKE ?)')
+        conditions.push(`(${toConditions.join(' OR ')})`)
+        tos.forEach(to => values.push(`%${to}%`, `%${to}%`, `%${to}%`))
+      }
+    }
+
+    // subject:text - messages with subject containing text
+    const subjectMatch = query.match(/subject:"([^"]+)"/g) || query.match(/subject:([^\s\)]+)/g)
+    if (subjectMatch) {
+      const subjects = subjectMatch.map(match => 
+        match.replace(/subject:"?([^"]+)"?/, '$1')
+      )
+      if (subjects.length === 1) {
+        conditions.push('c.subject LIKE ?')
+        values.push(`%${subjects[0]}%`)
+      } else if (subjects.length > 1) {
+        const subjectConditions = subjects.map(() => 'c.subject LIKE ?')
+        conditions.push(`(${subjectConditions.join(' OR ')})`)
+        subjects.forEach(subject => values.push(`%${subject}%`))
+      }
+    }
+
+    return { conditions, values }
   }
 }
