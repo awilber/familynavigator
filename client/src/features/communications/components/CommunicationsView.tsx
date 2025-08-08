@@ -189,6 +189,18 @@ const CommunicationsView: React.FC = () => {
                   }}
                 />
               )}
+              {currentFilterQuery && (
+                <Chip
+                  label={`Filtered: ${currentFilterQuery.substring(0, 30)}...`}
+                  color="warning"
+                  variant="outlined"
+                  sx={{
+                    backgroundColor: 'orange',
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }}
+                />
+              )}
             </Box>
             <CommunicationTimeline
               contactId={selectedContact?.id}

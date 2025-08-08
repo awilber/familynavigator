@@ -132,6 +132,46 @@ const CommunicationTimeline: React.FC<CommunicationTimelineProps> = ({
     return content.substring(0, maxLength) + '...'
   }
 
+  const extractEmailAddress = (emailString: string | undefined): string => {
+    if (!emailString) return ''
+    
+    // Extract email from formats like "Name <email@domain.com>" or just "email@domain.com"
+    const emailMatch = emailString.match(/<([^>]+)>/)
+    if (emailMatch) {
+      return emailMatch[1]
+    }
+    
+    // If no brackets, assume the whole string is an email or return as-is
+    return emailString
+  }
+
+  const extractDisplayName = (emailString: string | undefined): string => {
+    if (!emailString) return 'Unknown'
+    
+    // Extract name from formats like "Name <email@domain.com>"
+    const nameMatch = emailString.match(/^([^<]+)</)
+    if (nameMatch) {
+      return nameMatch[1].trim().replace(/^"/, '').replace(/"$/, '')
+    }
+    
+    // If no name part, return the email address
+    return extractEmailAddress(emailString) || emailString
+  }
+
+  const getFromToInfo = (comm: Communication) => {
+    const fromEmail = comm.contact_email || 'Unknown sender'
+    const fromName = extractDisplayName(fromEmail)
+    const fromAddress = extractEmailAddress(fromEmail)
+    
+    const toEmails = comm.metadata?.to || []
+    const toDisplay = toEmails.length > 0 ? toEmails[0] : 'Unknown recipient'
+    
+    return {
+      from: { name: fromName, email: fromAddress },
+      to: { email: toDisplay }
+    }
+  }
+
   if (loading) {
     return (
       <Paper sx={{ ...sx, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
@@ -212,74 +252,98 @@ const CommunicationTimeline: React.FC<CommunicationTimelineProps> = ({
                 {getSourceIcon(comm.source)}
               </Avatar>
 
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                {/* Header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <Typography variant="subtitle2" fontWeight="medium">
-                    {comm.contact_name || comm.contact_display_name || 'Unknown Contact'}
-                  </Typography>
-                  
-                  {getDirectionIcon(comm.direction)}
-                  
-                  <Chip
-                    label={comm.source}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontSize: '0.7rem',
-                      backgroundColor: 'var(--color-background-elevated)'
-                    }}
-                  />
-                  
-                  {getMessageTypeIcon(comm.message_type) && (
-                    <Box sx={{ color: 'text.secondary' }}>
-                      {getMessageTypeIcon(comm.message_type)}
-                    </Box>
-                  )}
-                  
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-                    {formatTimestamp(comm.timestamp)}
-                  </Typography>
-                </Box>
+              <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                {(() => {
+                  const emailInfo = getFromToInfo(comm)
+                  return (
+                    <>
+                      {/* Row 1: From and To */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Typography variant="body2" fontWeight="medium" sx={{ color: 'text.primary' }}>
+                          From:
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                          {emailInfo.from.name}
+                        </Typography>
+                        {emailInfo.from.email && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            &lt;{emailInfo.from.email}&gt;
+                          </Typography>
+                        )}
+                        
+                        <Box sx={{ mx: 1, color: 'text.secondary' }}>•</Box>
+                        
+                        <Typography variant="body2" fontWeight="medium" sx={{ color: 'text.primary' }}>
+                          To:
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                          {emailInfo.to.email}
+                        </Typography>
+                        
+                        {/* Direction and source indicators */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+                          {getDirectionIcon(comm.direction)}
+                          <Chip
+                            label={comm.source}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: '0.65rem',
+                              backgroundColor: 'var(--color-background-elevated)'
+                            }}
+                          />
+                        </Box>
+                      </Box>
 
-                {/* Subject */}
-                {comm.subject && (
-                  <Typography
-                    variant="body2"
-                    fontWeight="medium"
-                    sx={{ mb: 0.5, color: 'text.primary' }}
-                  >
-                    {comm.subject}
-                  </Typography>
-                )}
+                      {/* Row 2: Subject */}
+                      {comm.subject && (
+                        <Typography
+                          variant="body2"
+                          fontWeight="medium"
+                          sx={{ mb: 0.5, color: 'text.primary' }}
+                        >
+                          Subject: {comm.subject}
+                        </Typography>
+                      )}
 
-                {/* Content */}
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    wordBreak: 'break-word',
-                    lineHeight: 1.4
-                  }}
-                >
-                  {truncateContent(comm.content)}
+                      {/* Row 3: First line of content */}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          wordBreak: 'break-word',
+                          lineHeight: 1.4,
+                          mb: 0.5
+                        }}
+                      >
+                        {truncateContent(comm.content, 100)}
+                      </Typography>
+
+                      {/* Additional metadata if needed */}
+                      {comm.third_party_source && (
+                        <Box sx={{ mt: 0.5 }}>
+                          <Chip
+                            label={`via ${comm.third_party_source}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              height: 16,
+                              fontSize: '0.6rem',
+                              borderColor: 'var(--color-border-default)'
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </>
+                  )
+                })()}
+              </Box>
+              
+              {/* Date/time on the right */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 'fit-content' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+                  {formatTimestamp(comm.timestamp)}
                 </Typography>
-
-                {/* Metadata */}
-                {comm.third_party_source && (
-                  <Box sx={{ mt: 1 }}>
-                    <Chip
-                      label={`via ${comm.third_party_source}`}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        height: 18,
-                        fontSize: '0.65rem',
-                        borderColor: 'var(--color-border-default)'
-                      }}
-                    />
-                  </Box>
-                )}
               </Box>
 
               <IconButton size="small" sx={{ color: 'text.secondary', ml: 1 }}>

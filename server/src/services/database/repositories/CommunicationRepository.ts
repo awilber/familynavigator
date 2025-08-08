@@ -410,15 +410,16 @@ export class CommunicationRepository {
     const values: any[] = []
 
     // Simple Gmail query parser for common operators
-    // from:email - messages from specific email
+    // from:email - messages from specific email (stored in contact_email field in communications table)
     const fromMatch = query.match(/from:([^\s\)]+)/g)
     if (fromMatch) {
       const froms = fromMatch.map(match => match.replace('from:', ''))
       if (froms.length === 1) {
-        conditions.push('JSON_EXTRACT(c.metadata, "$.from") LIKE ?')
+        // Search in ct.primary_email (joined from contacts table) - this contains the actual sender email
+        conditions.push('ct.primary_email LIKE ?')
         values.push(`%${froms[0]}%`)
       } else if (froms.length > 1) {
-        const fromConditions = froms.map(() => 'JSON_EXTRACT(c.metadata, "$.from") LIKE ?')
+        const fromConditions = froms.map(() => 'ct.primary_email LIKE ?')
         conditions.push(`(${fromConditions.join(' OR ')})`)
         froms.forEach(from => values.push(`%${from}%`))
       }
@@ -454,6 +455,7 @@ export class CommunicationRepository {
       }
     }
 
+    // Trigger server restart
     return { conditions, values }
   }
 }
