@@ -237,8 +237,8 @@ const EmailFilteringPanel: React.FC<EmailFilteringPanelProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            p: 1.5,
-                            mb: 1,
+                            p: 1,
+                            mb: 0.5,
                             borderRadius: 1,
                             border: '1px solid',
                             borderColor: 'divider',
@@ -252,32 +252,29 @@ const EmailFilteringPanel: React.FC<EmailFilteringPanelProps> = ({
                             }
                           }}
                         >
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography
-                                variant="body2"
-                                fontWeight="medium"
-                                sx={{ 
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                {email.display_name}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Chip
-                                size="small"
-                                label={`${email.total_message_count} msgs`}
-                                color={getFrequencyColor(email.communication_frequency) as any}
-                                sx={{ fontSize: '0.7rem', height: 20 }}
-                              />
-                              <Typography variant="caption" color="text.secondary">
-                                {formatLastSeen(email.last_seen)}
-                              </Typography>
-                            </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+                            <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              sx={{ 
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1
+                              }}
+                            >
+                              {email.display_name}
+                            </Typography>
+                            <Chip
+                              size="small"
+                              label={`${email.total_message_count} msgs`}
+                              color={getFrequencyColor(email.communication_frequency) as any}
+                              sx={{ fontSize: '0.7rem', height: 18 }}
+                            />
+                            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                              {formatLastSeen(email.last_seen)}
+                            </Typography>
                           </Box>
                         </Box>
                       </Tooltip>
