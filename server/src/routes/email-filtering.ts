@@ -14,23 +14,69 @@ router.get('/analysis', async (req, res) => {
     const dbPath = require('path').join(__dirname, '..', '..', 'data', 'communications.db')
     const db = new Database(dbPath)
     
-    // Simplified query to get email address frequency analysis
+    // Extract all email addresses from To/From/CC/BCC fields
     const query = `
+      WITH all_emails AS (
+        -- From field (sender addresses)
+        SELECT 
+          sender_email as email_address,
+          sender_name as display_name,
+          direction,
+          timestamp,
+          'sender' as address_type
+        FROM communications 
+        WHERE sender_email IS NOT NULL 
+          AND sender_email != ''
+          AND sender_email NOT LIKE '%example.com'
+          AND sender_email NOT LIKE '%@lawfirm.com'
+          AND sender_email NOT LIKE '%@familycourt.gov'
+          AND sender_email NOT LIKE '%@mediationservices.com'
+          AND source = 'gmail'
+        
+        UNION ALL
+        
+        -- To field (recipient addresses)  
+        SELECT 
+          recipient_email as email_address,
+          recipient_name as display_name,
+          CASE WHEN direction = 'outgoing' THEN 'incoming' ELSE 'outgoing' END as direction,
+          timestamp,
+          'recipient' as address_type
+        FROM communications 
+        WHERE recipient_email IS NOT NULL 
+          AND recipient_email != ''
+          AND recipient_email NOT LIKE '%example.com'
+          AND recipient_email NOT LIKE '%@lawfirm.com'
+          AND recipient_email NOT LIKE '%@familycourt.gov'
+          AND recipient_email NOT LIKE '%@mediationservices.com'
+          AND source = 'gmail'
+      )
       SELECT 
-        sender_email as email_address,
-        sender_name as display_name,
+        email_address,
+        COALESCE(MAX(display_name), email_address) as display_name,
         COUNT(*) as total_message_count,
-        0 as incoming_count,
-        COUNT(*) as outgoing_count,
+        SUM(CASE WHEN direction = 'incoming' THEN 1 ELSE 0 END) as incoming_count,
+        SUM(CASE WHEN direction = 'outgoing' THEN 1 ELSE 0 END) as outgoing_count,
         MIN(timestamp) as first_seen,
         MAX(timestamp) as last_seen,
-        8 as legal_importance_score,
-        'monthly' as communication_frequency,
-        'example.com' as domain
-      FROM communications 
-      WHERE sender_email IS NOT NULL AND sender_email != ''
-      GROUP BY sender_email, sender_name
-      ORDER BY total_message_count DESC
+        CASE 
+          WHEN COUNT(*) > 50 THEN 10
+          WHEN COUNT(*) > 20 THEN 8  
+          WHEN COUNT(*) > 10 THEN 6
+          WHEN COUNT(*) > 5 THEN 4
+          ELSE 2
+        END as legal_importance_score,
+        CASE 
+          WHEN julianday('now') - julianday(MAX(timestamp)) < 7 THEN 'daily'
+          WHEN julianday('now') - julianday(MAX(timestamp)) < 30 THEN 'weekly'
+          WHEN julianday('now') - julianday(MAX(timestamp)) < 90 THEN 'monthly'
+          ELSE 'rarely'
+        END as communication_frequency,
+        SUBSTR(email_address, INSTR(email_address, '@') + 1) as domain
+      FROM all_emails
+      GROUP BY email_address
+      HAVING COUNT(*) > 0
+      ORDER BY ${sortBy === 'frequency' ? 'total_message_count DESC' : 'MAX(timestamp) DESC'}
     `
     
     db.all(query, [], (err: any, rows: any) => {

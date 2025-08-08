@@ -287,55 +287,79 @@ export const EmailFilteringPanel: React.FC = () => {
             </Typography>
           </Box>
         ) : (
-          <List>
+          <List dense>
             {dataToShow.map((address) => (
-              <ListItem key={address.email_address}>
-                <ListItemIcon>
+              <ListItem 
+                key={address.email_address} 
+                sx={{ 
+                  py: 0.5,
+                  '&:hover': { backgroundColor: 'action.hover' },
+                  borderRadius: 1,
+                  mb: 0.5
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
                   <Checkbox
+                    size="small"
                     checked={selectedAddresses.has(address.email_address)}
                     onChange={() => handleAddressToggle(address.email_address)}
                   />
                 </ListItemIcon>
                 <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="subtitle2">
-                      {address.display_name || address.email_address}
-                    </Typography>
-                    {address.legal_importance_score > 5 && (
-                      <Chip 
-                        label="High Legal Relevance" 
-                        size="small" 
-                        color="error"
-                        icon={<SecurityIcon />}
-                      />
-                    )}
-                    {address.communication_frequency === 'daily' && (
-                      <Chip 
-                        label="Daily" 
-                        size="small" 
-                        color="success"
-                        icon={<ScheduleIcon />}
-                      />
-                    )}
-                  </Box>
-                }
-                secondary={
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {address.email_address}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {address.total_message_count} messages • 
-                      {address.incoming_count} received • 
-                      {address.outgoing_count} sent •
-                      Last: {new Date(address.last_seen).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
+                  primary={
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1,
+                      flexWrap: 'wrap'
+                    }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontWeight: 'medium',
+                          color: 'text.primary'
+                        }}
+                      >
+                        {address.display_name ? 
+                          `${address.display_name} <${address.email_address}>` : 
+                          address.email_address
+                        }
+                      </Typography>
+                      
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ ml: 'auto', whiteSpace: 'nowrap' }}
+                      >
+                        {address.total_message_count} messages • 
+                        Last: {new Date(address.last_seen).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          year: 'numeric' 
+                        })}
+                      </Typography>
+                      
+                      {address.legal_importance_score > 7 && (
+                        <Chip 
+                          label="High" 
+                          size="small" 
+                          color="error"
+                          sx={{ height: 20, fontSize: '0.625rem' }}
+                        />
+                      )}
+                      
+                      {address.communication_frequency === 'daily' && (
+                        <Chip 
+                          label="Daily" 
+                          size="small" 
+                          color="success"
+                          sx={{ height: 20, fontSize: '0.625rem' }}
+                        />
+                      )}
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
           </List>
         )}
       </Box>
