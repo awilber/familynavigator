@@ -73,6 +73,14 @@ router.get('/analysis', async (req, res) => {
         MIN(timestamp) as first_seen,
         MAX(timestamp) as last_seen,
         CASE 
+          -- High-priority individuals get maximum legal score regardless of message count
+          WHEN LOWER(email_address) LIKE '%awilber%' THEN 10
+          WHEN LOWER(email_address) LIKE '%alexapowell%' THEN 10
+          WHEN LOWER(email_address) LIKE '%elizabeth%' THEN 9
+          -- Gmail addresses are generally higher priority for personal communications
+          WHEN LOWER(email_address) LIKE '%@gmail.com' AND COUNT(*) > 5 THEN 8
+          WHEN LOWER(email_address) LIKE '%@gmail.com' AND COUNT(*) > 1 THEN 6
+          -- General scoring based on message count
           WHEN COUNT(*) > 50 THEN 10
           WHEN COUNT(*) > 20 THEN 8  
           WHEN COUNT(*) > 10 THEN 6
