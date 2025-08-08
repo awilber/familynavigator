@@ -85,6 +85,7 @@ class CommunicationsApi {
     if (filters?.date_to) params.set('date_to', filters.date_to)
     if (filters?.has_attachments) params.set('has_attachments', filters.has_attachments.toString())
     if (filters?.search_text) params.set('search', filters.search_text)
+    if (filters?.gmail_query) params.set('gmail_query', filters.gmail_query)
 
     const response = await this.request<Communication[]>(`/communications?${params}`)
     
