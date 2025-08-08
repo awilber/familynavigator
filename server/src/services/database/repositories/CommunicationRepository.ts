@@ -410,18 +410,21 @@ export class CommunicationRepository {
     const values: any[] = []
 
     // Simple Gmail query parser for common operators
-    // from:email - messages from specific email (stored in contact_email field in communications table)
+    // from:email - messages from specific email (check both sender fields and metadata)
     const fromMatch = query.match(/from:([^\s\)]+)/g)
     if (fromMatch) {
       const froms = fromMatch.map(match => match.replace('from:', ''))
       if (froms.length === 1) {
-        // Search in ct.primary_email (joined from contacts table) - this contains the actual sender email
-        conditions.push('ct.primary_email LIKE ?')
-        values.push(`%${froms[0]}%`)
+        // Search in multiple fields: contact table primary_email, and also check if user is searching for recipient emails
+        // This handles both cases: actual senders and when users want to filter by recipient addresses
+        conditions.push('(ct.primary_email LIKE ? OR JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ?)')
+        values.push(`%${froms[0]}%`, `%${froms[0]}%`, `%${froms[0]}%`)
       } else if (froms.length > 1) {
-        const fromConditions = froms.map(() => 'ct.primary_email LIKE ?')
+        const fromConditions = froms.map(() => '(ct.primary_email LIKE ? OR JSON_EXTRACT(c.metadata, "$.to") LIKE ? OR JSON_EXTRACT(c.metadata, "$.cc") LIKE ?)')
         conditions.push(`(${fromConditions.join(' OR ')})`)
-        froms.forEach(from => values.push(`%${from}%`))
+        froms.forEach(from => {
+          values.push(`%${from}%`, `%${from}%`, `%${from}%`)
+        })
       }
     }
 
