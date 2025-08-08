@@ -295,11 +295,11 @@ const GmailIntegration: React.FC = () => {
     }
   }
 
-  const handleTestSync = async () => {
+  const handleTestSync = async (maxMessages: number = 10) => {
     try {
       const options = {
-        batchSize: 10,
-        maxMessages: 10,
+        batchSize: Math.min(10, maxMessages), // Keep batch size reasonable
+        maxMessages,
         query: syncOptions.query || ''
       }
 
@@ -731,10 +731,26 @@ const GmailIntegration: React.FC = () => {
                 <Button
                   variant="outlined"
                   startIcon={<SyncIcon />}
-                  onClick={handleTestSync}
+                  onClick={() => handleTestSync(10)}
                   color="secondary"
                 >
                   Test Sync (10 messages)
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<SyncIcon />}
+                  onClick={() => handleTestSync(50)}
+                  color="secondary"
+                >
+                  Test Sync (50 messages)
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<SyncIcon />}
+                  onClick={() => handleTestSync(100)}
+                  color="secondary"
+                >
+                  Test Sync (100 messages)
                 </Button>
                 <Button
                   variant="outlined"

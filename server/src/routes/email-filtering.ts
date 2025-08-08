@@ -93,7 +93,13 @@ router.get('/analysis', async (req, res) => {
         AND LENGTH(email_address) > 3
       GROUP BY LOWER(email_address)
       HAVING COUNT(*) > 0
-      ORDER BY ${sortBy === 'frequency' ? 'total_message_count DESC' : 'MAX(timestamp) DESC'}
+      ORDER BY ${
+        sortBy === 'frequency' ? 'total_message_count DESC' :
+        sortBy === 'recent' ? 'MAX(timestamp) DESC' :
+        sortBy === 'legal_relevance' ? 'legal_importance_score DESC' :
+        sortBy === 'alphabetical' ? 'email_address ASC' :
+        'total_message_count DESC' // default to frequency
+      }
     `
     
     db.all(query, [], (err: any, rows: any) => {
