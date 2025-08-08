@@ -108,13 +108,15 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
     if (viewMode === 'contacts') {
       items = contacts
     } else {
-      // Combine contacts and email addresses, avoiding duplicates
-      const contactEmails = new Set(contacts.map(c => c.primary_email?.toLowerCase()))
-      const uniqueEmails = emailAddresses.filter(
-        email => !contactEmails.has(email.email_address.toLowerCase())
+      // Show API-sorted email addresses first (to preserve sorting), 
+      // then add remaining contacts
+      const apiEmailSet = new Set(emailAddresses.map(e => e.email_address.toLowerCase()))
+      const contactsWithoutApiEmails = contacts.filter(
+        contact => !contact.primary_email || !apiEmailSet.has(contact.primary_email.toLowerCase())
       )
       
-      items = [...contacts, ...uniqueEmails]
+      // CRITICAL: Put API-sorted emails first to preserve sort order
+      items = [...emailAddresses, ...contactsWithoutApiEmails]
     }
 
     // Apply search filter
@@ -190,8 +192,8 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: 2,
-        mb: 1,
+        p: 1.5,
+        mb: 0.5,
         borderRadius: 1,
         border: '1px solid',
         borderColor: isSelected(contact) ? 'primary.main' : 'divider',
@@ -205,31 +207,31 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
         }
       }}
     >
-      <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-        <PersonIcon />
+      <Avatar sx={{ mr: 1.5, width: 32, height: 32, bgcolor: 'primary.main' }}>
+        <PersonIcon fontSize="small" />
       </Avatar>
       
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
+        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.25, lineHeight: 1.2 }}>
           {contact.display_name || contact.name}
         </Typography>
         
         {contact.primary_email && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-            <EmailIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.25, display: 'block' }}>
+            <EmailIcon sx={{ fontSize: 12, mr: 0.5, verticalAlign: 'middle' }} />
             {contact.primary_email}
           </Typography>
         )}
         
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" label="Contact" color="primary" />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+          <Chip size="small" label="Contact" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
           {contact.relationship_type && (
-            <Chip size="small" label={contact.relationship_type} variant="outlined" />
+            <Chip size="small" label={contact.relationship_type} variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
           )}
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
         <Button
           size="small"
           variant="outlined"
@@ -241,10 +243,11 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
               onFilterApply?.(query)
             }
           }}
+          sx={{ minHeight: 24, py: 0.25, px: 1, fontSize: '0.75rem' }}
         >
           Filter
         </Button>
-        <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+        <IconButton size="small" onClick={(e) => e.stopPropagation()} sx={{ p: 0.25 }}>
           <EditIcon fontSize="small" />
         </IconButton>
       </Box>
@@ -258,8 +261,8 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: 2,
-        mb: 1,
+        p: 1.5,
+        mb: 0.5,
         borderRadius: 1,
         border: '1px solid',
         borderColor: isSelected(email) ? 'primary.main' : 'divider',
@@ -273,38 +276,40 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
         }
       }}
     >
-      <Avatar sx={{ mr: 2, bgcolor: 'info.main' }}>
-        <EmailIcon />
+      <Avatar sx={{ mr: 1.5, width: 32, height: 32, bgcolor: 'info.main' }}>
+        <EmailIcon fontSize="small" />
       </Avatar>
       
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
+        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.25, lineHeight: 1.2 }}>
           {email.display_name}
         </Typography>
         
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.25, display: 'block' }}>
           {email.email_address}
         </Typography>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
           <Chip 
             size="small" 
             label={`${email.total_message_count} msgs`}
             color={getFrequencyColor(email.communication_frequency) as any}
+            sx={{ height: 20, fontSize: '0.7rem' }}
           />
           <Chip 
             size="small" 
             label={`Legal: ${email.legal_importance_score}/10`}
             color="warning"
             variant="outlined"
+            sx={{ height: 20, fontSize: '0.7rem' }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
             {formatLastSeen(email.last_seen)}
           </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
         <Button
           size="small"
           variant="contained"
@@ -313,6 +318,7 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
             e.stopPropagation()
             handleItemClick(email)
           }}
+          sx={{ minHeight: 24, py: 0.25, px: 1, fontSize: '0.75rem' }}
         >
           Filter
         </Button>
@@ -324,8 +330,9 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
             e.stopPropagation()
             handleCreateContact(email.email_address)
           }}
+          sx={{ minHeight: 24, py: 0.25, px: 1, fontSize: '0.7rem' }}
         >
-          Create Contact
+          Contact
         </Button>
       </Box>
     </Box>
@@ -356,15 +363,15 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
 
   return (
     <Card sx={{ height: '100%', minHeight: 400 }}>
-      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <PersonIcon sx={{ color: 'primary.main', mr: 1 }} />
-            <Typography variant="h6" fontWeight="bold">
+            <PersonIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.2rem' }} />
+            <Typography variant="subtitle1" fontWeight="bold">
               People & Communications
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
               {filteredItems.length} {viewMode === 'contacts' ? 'contacts' : 'items'}
             </Typography>
           </Box>
@@ -377,9 +384,9 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
                   onFilterClear?.()
                   onContactSelect?.(null)
                 }}
-                sx={{ color: 'warning.main' }}
+                sx={{ color: 'warning.main', p: 0.5 }}
               >
-                <ClearIcon />
+                <ClearIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
@@ -393,55 +400,56 @@ const PeopleAndCommunications: React.FC<PeopleAndCommunicationsProps> = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
-            startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+            startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1, fontSize: '1rem' }} />
           }}
-          sx={{ mb: 2 }}
+          sx={{ mb: 1.5, '& .MuiOutlinedInput-input': { py: 1 } }}
         />
 
         {/* Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
             onChange={(e, newMode) => newMode && setViewMode(newMode)}
             size="small"
+            sx={{ '& .MuiToggleButton-root': { py: 0.5, px: 1, fontSize: '0.75rem' } }}
           >
             <ToggleButton value="all-addresses">
-              <EmailIcon sx={{ mr: 0.5 }} />
+              <EmailIcon sx={{ mr: 0.5, fontSize: '1rem' }} />
               All Addresses
             </ToggleButton>
             <ToggleButton value="contacts">
-              <PersonIcon sx={{ mr: 0.5 }} />
+              <PersonIcon sx={{ mr: 0.5, fontSize: '1rem' }} />
               Contacts Only
             </ToggleButton>
           </ToggleButtonGroup>
 
-          <ButtonGroup size="small" variant="outlined">
+          <ButtonGroup size="small" variant="outlined" sx={{ '& .MuiButton-root': { py: 0.5, px: 1, fontSize: '0.75rem', minHeight: 28 } }}>
             <Button
               onClick={() => setSortMode('frequency')}
               variant={sortMode === 'frequency' ? 'contained' : 'outlined'}
-              startIcon={<SortIcon />}
+              startIcon={<SortIcon fontSize="small" />}
             >
               Frequency
             </Button>
             <Button
               onClick={() => setSortMode('recent')}
               variant={sortMode === 'recent' ? 'contained' : 'outlined'}
-              startIcon={<TimeIcon />}
+              startIcon={<TimeIcon fontSize="small" />}
             >
               Recent
             </Button>
             <Button
               onClick={() => setSortMode('legal_relevance')}
               variant={sortMode === 'legal_relevance' ? 'contained' : 'outlined'}
-              startIcon={<LegalIcon />}
+              startIcon={<LegalIcon fontSize="small" />}
             >
               Legal
             </Button>
           </ButtonGroup>
         </Box>
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: 1.5 }} />
 
         {/* Items List */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
