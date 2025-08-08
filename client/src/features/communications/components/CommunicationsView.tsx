@@ -5,24 +5,62 @@ import {
   Typography,
   Chip,
   Card,
-  CardContent
+  CardContent,
+  Tabs,
+  Tab,
+  Paper
 } from '@mui/material'
 import {
   Email as EmailIcon,
   Message as MessageIcon,
-  Schedule as ScheduleIcon
+  Schedule as ScheduleIcon,
+  Timeline as TimelineIcon,
+  ShowChart as ChartIcon
 } from '@mui/icons-material'
 import ContactsList from './ContactsList'
 import CommunicationTimeline from './CommunicationTimeline'
+import CommunicationTrendsChart from './CommunicationTrendsChart'
 import GmailIntegration from './GmailIntegration'
 import EmailFilteringPanel from './EmailFilteringPanel'
 import { Contact, CommunicationStats } from '../types'
 import { communicationsApi } from '../services/api'
 
+// TabPanel component for Material-UI tabs
+interface TabPanelProps {
+  children?: React.ReactNode
+  index: number
+  value: number
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`communication-tabpanel-${index}`}
+      aria-labelledby={`communication-tab-${index}`}
+      style={{ height: '100%', display: value === index ? 'flex' : 'none', flexDirection: 'column' }}
+      {...other}
+    >
+      {value === index && children}
+    </div>
+  )
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `communication-tab-${index}`,
+    'aria-controls': `communication-tabpanel-${index}`,
+  }
+}
+
 const CommunicationsView: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [stats, setStats] = useState<CommunicationStats | null>(null)
   const [currentFilterQuery, setCurrentFilterQuery] = useState<string | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState(0)
 
   useEffect(() => {
     loadStats()
@@ -171,12 +209,13 @@ const CommunicationsView: React.FC = () => {
           </Box>
         </Grid>
 
-        {/* Communication Timeline */}
+        {/* Communication Analysis */}
         <Grid item xs={12} md={8}>
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Header with status chips */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, pb: 0 }}>
               <Typography variant="h6">
-                {selectedContact ? 'Messages' : 'Recent Activity'}
+                Communication Analysis
               </Typography>
               {selectedContact && (
                 <Chip
@@ -202,12 +241,48 @@ const CommunicationsView: React.FC = () => {
                 />
               )}
             </Box>
-            <CommunicationTimeline
-              contactId={selectedContact?.id}
-              filterQuery={currentFilterQuery}
-              sx={{ flex: 1 }}
-            />
-          </Box>
+
+            {/* Tabs */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs 
+                value={activeTab} 
+                onChange={(event, newValue) => setActiveTab(newValue)}
+                aria-label="communication analysis tabs"
+              >
+                <Tab 
+                  icon={<TimelineIcon />}
+                  label="Recent Activity" 
+                  {...a11yProps(0)}
+                  sx={{ minHeight: 48 }}
+                />
+                <Tab 
+                  icon={<ChartIcon />}
+                  label="Communication Trends" 
+                  {...a11yProps(1)}
+                  sx={{ minHeight: 48 }}
+                />
+              </Tabs>
+            </Box>
+
+            {/* Tab Content */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <TabPanel value={activeTab} index={0}>
+                <CommunicationTimeline
+                  contactId={selectedContact?.id}
+                  filterQuery={currentFilterQuery}
+                  sx={{ flex: 1 }}
+                />
+              </TabPanel>
+              
+              <TabPanel value={activeTab} index={1}>
+                <CommunicationTrendsChart
+                  contactId={selectedContact?.id}
+                  filterQuery={currentFilterQuery}
+                  sx={{ flex: 1 }}
+                />
+              </TabPanel>
+            </Box>
+          </Paper>
         </Grid>
       </Grid>
     </Box>
