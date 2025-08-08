@@ -409,8 +409,8 @@ export const EmailFilteringPanel: React.FC = () => {
   )
 
   return (
-    <Card sx={{ mt: 2 }}>
-      <CardContent>
+    <Card sx={{ mt: 2, flex: '0 0 auto' }}>
+      <CardContent sx={{ maxHeight: '50vh', overflow: 'auto' }}>
         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FilterListIcon />
           Email Address Filtering

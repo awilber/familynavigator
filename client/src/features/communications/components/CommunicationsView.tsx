@@ -87,7 +87,7 @@ const CommunicationsView: React.FC = () => {
   }
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: 3, gap: 3 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
       <Box>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -143,7 +143,7 @@ const CommunicationsView: React.FC = () => {
       <EmailFilteringPanel />
 
       {/* Main Content */}
-      <Grid container spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+      <Grid container spacing={3} sx={{ flex: '1 1 auto', minHeight: 400 }}>
         {/* Contacts List */}
         <Grid item xs={12} md={4}>
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
