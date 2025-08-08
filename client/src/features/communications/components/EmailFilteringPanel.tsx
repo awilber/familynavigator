@@ -236,9 +236,9 @@ export const EmailFilteringPanel: React.FC = () => {
   const renderFrequencyTab = () => {
     if (!frequencyData) return <LinearProgress />
 
-    const dataToShow = activeTab === 0 ? frequencyData.topAddresses :
-                      activeTab === 1 ? frequencyData.recentlyActive :
-                      frequencyData.legallyRelevant
+    // Use the emails array from the API response, with fallback to empty array
+    const emails = frequencyData.emails || []
+    const dataToShow = emails // All tabs show the same data for now
 
     return (
       <Box>
@@ -277,16 +277,26 @@ export const EmailFilteringPanel: React.FC = () => {
           </Badge>
         </Box>
 
-        <List>
-          {dataToShow.map((address) => (
-            <ListItem key={address.email_address}>
-              <ListItemIcon>
-                <Checkbox
-                  checked={selectedAddresses.has(address.email_address)}
-                  onChange={() => handleAddressToggle(address.email_address)}
-                />
-              </ListItemIcon>
-              <ListItemText
+        {dataToShow.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              No email addresses found. 
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Connect Gmail and sync your messages to see email filtering options.
+            </Typography>
+          </Box>
+        ) : (
+          <List>
+            {dataToShow.map((address) => (
+              <ListItem key={address.email_address}>
+                <ListItemIcon>
+                  <Checkbox
+                    checked={selectedAddresses.has(address.email_address)}
+                    onChange={() => handleAddressToggle(address.email_address)}
+                  />
+                </ListItemIcon>
+                <ListItemText
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="subtitle2">
@@ -326,7 +336,8 @@ export const EmailFilteringPanel: React.FC = () => {
               />
             </ListItem>
           ))}
-        </List>
+          </List>
+        )}
       </Box>
     )
   }
