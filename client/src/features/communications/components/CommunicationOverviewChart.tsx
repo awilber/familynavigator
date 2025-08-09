@@ -126,8 +126,8 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
   const person2Name = getPersonName(person2)
 
   return (
-    <Card sx={{ ...sx, mb: 3 }}>
-      <CardContent>
+    <Card sx={{ ...sx, mb: 3, minHeight: 500 }}>
+      <CardContent sx={{ pb: 3 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -190,7 +190,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
         </Box>
 
         {/* Chart */}
-        <Box sx={{ height: 300, position: 'relative' }}>
+        <Box sx={{ height: 400, position: 'relative' }}>
           {loading ? (
             <Box sx={{ 
               display: 'flex', 
@@ -206,7 +206,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
             </Box>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis 
                   dataKey="period"
