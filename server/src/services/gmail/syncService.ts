@@ -55,6 +55,8 @@ export interface SyncOptions {
   startDate?: Date
   endDate?: Date
   resumeFromLastSync?: boolean
+  filterPersons?: string[]  // Focus on specific people
+  expandDateRange?: boolean // Go back further if needed
 }
 
 export class GmailSyncService {
@@ -634,12 +636,24 @@ export class GmailSyncService {
   private buildQuery(options: SyncOptions): string {
     const queryParts: string[] = []
 
-    if (options.query) {
+    // If filterPersons is specified, build a query to find communications between those people
+    if (options.filterPersons && options.filterPersons.length === 2) {
+      const [person1, person2] = options.filterPersons
+      // Create a Gmail query for messages between the two people
+      queryParts.push(`(from:${person1} to:${person2}) OR (from:${person2} to:${person1})`)
+    } else if (options.query) {
       queryParts.push(options.query)
     }
 
+    // Set date range - if expandDateRange is true and no dates specified, go back further
     if (options.startDate) {
       const dateStr = options.startDate.toISOString().split('T')[0]
+      queryParts.push(`after:${dateStr}`)
+    } else if (options.expandDateRange && options.filterPersons) {
+      // Go back 5 years to find historical communications between specific people
+      const fiveYearsAgo = new Date()
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
+      const dateStr = fiveYearsAgo.toISOString().split('T')[0]
       queryParts.push(`after:${dateStr}`)
     }
 

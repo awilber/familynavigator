@@ -32,7 +32,11 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
-import { TrendingUp as TrendingUpIcon } from '@mui/icons-material'
+import { 
+  TrendingUp as TrendingUpIcon,
+  Sync as SyncIcon,
+  CloudDownload as CloudDownloadIcon
+} from '@mui/icons-material'
 
 interface CommunicationData {
   period: string
@@ -169,6 +173,33 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
   const person1Name = getPersonName(person1)
   const person2Name = getPersonName(person2)
 
+  // Handle filtered sync to get more data between selected people
+  const handleFilteredSync = async (maxMessages: number = 50) => {
+    try {
+      const options = {
+        batchSize: Math.min(25, maxMessages), // Keep batch size reasonable
+        maxMessages,
+        filterPersons: [person1, person2],
+        expandDateRange: true // Go back further to find historical messages
+      }
+
+      const response = await fetch('/api/gmail/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options)
+      })
+      
+      if (response.ok) {
+        // Reload data after sync completes
+        setTimeout(() => {
+          window.location.reload() // Simple approach to refresh data
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Error starting filtered sync:', error)
+    }
+  }
+
   return (
     <Card sx={{ ...sx, mb: 3, minHeight: 500 }}>
       <CardContent sx={{ pb: 3 }}>
@@ -258,6 +289,50 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
               <ToggleButton value="month">Month</ToggleButton>
               <ToggleButton value="year">Year</ToggleButton>
             </ToggleButtonGroup>
+          </Box>
+        </Box>
+
+        {/* Filtered Sync Options */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          mb: 2, 
+          p: 2, 
+          bgcolor: 'action.hover',
+          borderRadius: 1 
+        }}>
+          <Typography variant="body2" color="text.secondary">
+            Need more data between {person1Name} and {person2Name}? Sync historical emails:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SyncIcon />}
+              onClick={() => handleFilteredSync(25)}
+              color="primary"
+            >
+              Sync 25
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SyncIcon />}
+              onClick={() => handleFilteredSync(50)}
+              color="primary"
+            >
+              Sync 50
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<CloudDownloadIcon />}
+              onClick={() => handleFilteredSync(100)}
+              color="secondary"
+            >
+              Sync 100
+            </Button>
           </Box>
         </Box>
 

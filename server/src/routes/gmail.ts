@@ -188,7 +188,9 @@ router.post('/sync', async (req, res) => {
       maxMessages: req.body.maxMessages ? parseInt(req.body.maxMessages) : undefined,
       query: req.body.query || '',
       startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
-      endDate: req.body.endDate ? new Date(req.body.endDate) : undefined
+      endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      filterPersons: req.body.filterPersons && Array.isArray(req.body.filterPersons) ? req.body.filterPersons : undefined,
+      expandDateRange: req.body.expandDateRange || false
     }
 
     // Start sync in background

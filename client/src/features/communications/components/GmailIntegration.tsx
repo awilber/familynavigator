@@ -87,7 +87,11 @@ interface SyncOptions {
   endDate?: string
 }
 
-const GmailIntegration: React.FC = () => {
+interface GmailIntegrationProps {
+  filterPersons?: string[] // Optional: filter for specific people
+}
+
+const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) => {
   const [status, setStatus] = useState<GmailStatus>({ isAuthenticated: false })
   const [progress, setProgress] = useState<SyncProgress>({
     status: 'idle',
@@ -314,7 +318,9 @@ const GmailIntegration: React.FC = () => {
       const options = {
         batchSize: Math.min(10, maxMessages), // Keep batch size reasonable
         maxMessages,
-        query: syncOptions.query || ''
+        query: syncOptions.query || '',
+        filterPersons: filterPersons && filterPersons.length === 2 ? filterPersons : undefined,
+        expandDateRange: true // Go back further if needed to find messages between specific people
       }
 
       const response = await fetch('/api/gmail/sync', {
