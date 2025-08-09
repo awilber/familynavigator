@@ -8,6 +8,6 @@ export const themes: Record<string, Theme> = {
 }
 
 export const availableThemes = Object.values(themes)
-export const defaultTheme = 'light'
+export const defaultTheme = 'dark'
 
 export { lightTheme, darkTheme }

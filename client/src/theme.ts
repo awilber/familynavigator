@@ -149,17 +149,17 @@ export const useAdaptiveMuiTheme = () => {
   }
 }
 
-// Default theme export for backward compatibility
-export const theme = createTheme(createAdaptiveTheme(false, {
+// Default theme export for backward compatibility (dark mode default)
+export const theme = createTheme(createAdaptiveTheme(true, {
   colors: {
-    accent: { primary: '#1976d2', hover: '#42a5f5', active: '#1565c0' },
-    background: { primary: '#ffffff', secondary: '#f5f5f5' },
-    text: { primary: 'rgba(0, 0, 0, 0.87)', secondary: 'rgba(0, 0, 0, 0.6)' },
+    accent: { primary: '#90caf9', hover: '#64b5f6', active: '#42a5f5' },
+    background: { primary: '#121212', secondary: '#1e1e1e' },
+    text: { primary: 'rgba(255, 255, 255, 0.87)', secondary: 'rgba(255, 255, 255, 0.6)' },
     status: {
-      success: '#2e7d32',
-      warning: '#f57f17',
-      error: '#d32f2f',
-      info: '#1976d2'
+      success: '#4caf50',
+      warning: '#ff9800',
+      error: '#f44336',
+      info: '#2196f3'
     }
   }
 }))
