@@ -172,16 +172,30 @@ const GmailIntegration: React.FC = () => {
   }
 
   const handleAuthenticate = async () => {
+    console.log('Gmail authentication button clicked')
     try {
+      console.log('Fetching auth URL from /api/gmail/auth')
       const response = await fetch('/api/gmail/auth')
-      const data = await response.json()
+      console.log('Response status:', response.status)
       
-      if (data.success) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('Auth response data:', data)
+      
+      if (data.success && data.data?.authUrl) {
+        console.log('Redirecting to OAuth URL:', data.data.authUrl)
         // Open OAuth URL in the same window
         window.location.href = data.data.authUrl
+      } else {
+        console.error('Invalid response data:', data)
+        alert('Failed to generate authentication URL. Please try again.')
       }
     } catch (error) {
       console.error('Error starting Gmail authentication:', error)
+      alert(`Authentication error: ${error.message}`)
     }
   }
 
@@ -455,9 +469,20 @@ const GmailIntegration: React.FC = () => {
           {/* Account Info */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Connected Account
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">
+                  Connected Account
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<SyncIcon />}
+                  onClick={() => handleTestSync(5)}
+                  color="secondary"
+                >
+                  Test Connection
+                </Button>
+              </Box>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <Typography variant="body2" color="text.secondary">
@@ -772,6 +797,15 @@ const GmailIntegration: React.FC = () => {
               </>
             ) : null}
 
+            <Button
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={handleAuthenticate}
+              color="primary"
+              sx={{ mr: 2 }}
+            >
+              Reconnect Gmail
+            </Button>
             <Button
               variant="text"
               onClick={handleRevoke}
