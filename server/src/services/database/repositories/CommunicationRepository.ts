@@ -503,14 +503,14 @@ export class CommunicationRepository {
         periods = 30
     }
 
-    // For testing with sample data, let's use a simple approach based on email patterns in content/subject
-    // In production, this would use proper contact linking and metadata
+    // Separate queries for sent vs received to make direction clearer
+    // Person 1 represents awilber sending/receiving
+    // Person 2 represents alexapowell sending/receiving
     
-    // Extract the username part of the email for pattern matching
-    const person1Username = email1.split('@')[0]
-    const person2Username = email2.split('@')[0]
+    const person1Username = email1.split('@')[0] // awilber
+    const person2Username = email2.split('@')[0] // alexapowell
     
-    // Query for person 1 communications (simple pattern matching for demo data)
+    // Query for communications involving person1 (awilber)
     const person1Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
@@ -518,16 +518,16 @@ export class CommunicationRepository {
       FROM communications c
       WHERE c.timestamp >= datetime('2025-01-01')
         AND (
-          c.subject LIKE ? OR 
-          c.content LIKE ? OR
+          -- Outgoing from awilber (person1 sending)
           (c.direction = 'outgoing' AND ? = 'awilber') OR
-          (c.direction = 'incoming' AND c.subject LIKE '%awilber%')
+          -- Incoming to awilber (person1 receiving)
+          (c.direction = 'incoming' AND c.content LIKE '%awilber%')
         )
       GROUP BY period
       ORDER BY period
     `
 
-    // Query for person 2 communications (simple pattern matching for demo data)
+    // Query for communications involving person2 (alexapowell) 
     const person2Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
@@ -535,8 +535,10 @@ export class CommunicationRepository {
       FROM communications c
       WHERE c.timestamp >= datetime('2025-01-01')
         AND (
+          -- Messages mentioning alexapowell (involved in communication)
           c.subject LIKE ? OR 
           c.content LIKE ? OR
+          -- Specific alexapowell patterns
           c.subject LIKE '%alexapowell%' OR
           c.content LIKE '%alexapowell%'
         )
@@ -548,7 +550,7 @@ export class CommunicationRepository {
     const person2Pattern = `%${person2Username}%`
 
     const [person1Data, person2Data] = await Promise.all([
-      db.all(person1Query, [person1Pattern, person1Pattern, person1Username]),
+      db.all(person1Query, [person1Username]),
       db.all(person2Query, [person2Pattern, person2Pattern])
     ])
 
