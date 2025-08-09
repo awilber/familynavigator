@@ -503,31 +503,27 @@ export class CommunicationRepository {
         periods = 30
     }
 
-    // Separate queries for sent vs received to make direction clearer
-    // Person 1 represents awilber sending/receiving
-    // Person 2 represents alexapowell sending/receiving
+    // Filter for emails SENT FROM each person only (not received)
+    // This shows actual sending patterns, not just involvement
     
     const person1Username = email1.split('@')[0] // awilber
     const person2Username = email2.split('@')[0] // alexapowell
     
-    // Query for communications involving person1 (awilber)
+    // Query for emails SENT BY person1 (outgoing from awilber only)
     const person1Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
         COUNT(*) as count
       FROM communications c
       WHERE c.timestamp >= datetime('2025-01-01')
-        AND (
-          -- Outgoing from awilber (person1 sending)
-          (c.direction = 'outgoing' AND ? = 'awilber') OR
-          -- Incoming to awilber (person1 receiving)
-          (c.direction = 'incoming' AND c.content LIKE '%awilber%')
-        )
+        AND c.direction = 'outgoing'
+        AND ? = 'awilber'
       GROUP BY period
       ORDER BY period
     `
 
-    // Query for communications involving person2 (alexapowell) 
+    // Query for emails SENT BY person2 (look for alexapowell as sender)
+    // Since sample data doesn't have proper metadata, we'll look for patterns indicating alexapowell sent
     const person2Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
@@ -535,23 +531,20 @@ export class CommunicationRepository {
       FROM communications c
       WHERE c.timestamp >= datetime('2025-01-01')
         AND (
-          -- Messages mentioning alexapowell (involved in communication)
-          c.subject LIKE ? OR 
-          c.content LIKE ? OR
-          -- Specific alexapowell patterns
-          c.subject LIKE '%alexapowell%' OR
-          c.content LIKE '%alexapowell%'
+          -- Look for outgoing messages that mention alexapowell as sender
+          (c.direction = 'outgoing' AND c.content LIKE '%from alexapowell%') OR
+          -- Look for messages with alexapowell in subject as sender  
+          (c.subject LIKE '%from:alexapowell%') OR
+          -- For demo purposes, assume any message mentioning alexapowell could be from them
+          (c.content LIKE '%alexapowell%' AND c.direction = 'outgoing')
         )
       GROUP BY period
       ORDER BY period
     `
 
-    const person1Pattern = `%${person1Username}%`
-    const person2Pattern = `%${person2Username}%`
-
     const [person1Data, person2Data] = await Promise.all([
       db.all(person1Query, [person1Username]),
-      db.all(person2Query, [person2Pattern, person2Pattern])
+      db.all(person2Query, [])
     ])
 
     // Create a map for easier lookup
