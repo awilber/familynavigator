@@ -143,6 +143,34 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
             />
           </Box>
 
+          {/* Legend with Color Blocks and To/From Context */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ 
+                width: 16, 
+                height: 16, 
+                backgroundColor: '#1976d2', 
+                borderRadius: 1,
+                border: '2px solid #1976d2'
+              }} />
+              <Typography variant="body2" fontWeight="bold" color="#1976d2">
+                {person1Name} (To/From)
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ 
+                width: 16, 
+                height: 16, 
+                backgroundColor: '#ed6c02', 
+                borderRadius: 1,
+                border: '2px solid #ed6c02'
+              }} />
+              <Typography variant="body2" fontWeight="bold" color="#ed6c02">
+                {person2Name} (To/From)
+              </Typography>
+            </Box>
+          </Box>
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {/* Person Selection */}
             <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -231,7 +259,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                   strokeWidth={3}
                   dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: '#1976d2' }}
-                  name={person1Name}
+                  name={`${person1Name} (To/From)`}
                   connectNulls
                 />
                 <Line
@@ -241,7 +269,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                   strokeWidth={3}
                   dot={{ fill: '#ed6c02', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: '#ed6c02' }}
-                  name={person2Name}
+                  name={`${person2Name} (To/From)`}
                   connectNulls
                 />
               </LineChart>
