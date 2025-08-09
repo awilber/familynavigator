@@ -466,4 +466,128 @@ export class CommunicationRepository {
 
     return { conditions, values }
   }
+
+  async getOverviewChartData(email1: string, email2: string, timeRange: 'week' | 'month' | 'year'): Promise<{
+    period: string
+    date: string
+    person1Count: number
+    person2Count: number
+    total: number
+  }[]> {
+    const db = await this.getDb()
+    
+    // Determine date grouping and range based on timeRange
+    let dateFormat: string
+    let dateSubtract: string
+    let periods: number
+    
+    switch (timeRange) {
+      case 'week':
+        dateFormat = '%Y-%m-%d'
+        dateSubtract = '7 days'
+        periods = 7
+        break
+      case 'month':
+        dateFormat = '%Y-%m-%d'
+        dateSubtract = '30 days'
+        periods = 30
+        break
+      case 'year':
+        dateFormat = '%Y-%m'
+        dateSubtract = '12 months'
+        periods = 12
+        break
+      default:
+        dateFormat = '%Y-%m-%d'
+        dateSubtract = '30 days'
+        periods = 30
+    }
+
+    // Query for person 1 communications
+    const person1Query = `
+      SELECT 
+        strftime('${dateFormat}', c.timestamp) as period,
+        COUNT(*) as count
+      FROM communications c
+      LEFT JOIN contacts ct ON c.contact_id = ct.id
+      WHERE c.timestamp >= datetime('now', '-${dateSubtract}')
+        AND (
+          ct.primary_email LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.to') LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.cc') LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.from') LIKE ?
+        )
+      GROUP BY period
+      ORDER BY period
+    `
+
+    // Query for person 2 communications  
+    const person2Query = `
+      SELECT 
+        strftime('${dateFormat}', c.timestamp) as period,
+        COUNT(*) as count
+      FROM communications c
+      LEFT JOIN contacts ct ON c.contact_id = ct.id
+      WHERE c.timestamp >= datetime('now', '-${dateSubtract}')
+        AND (
+          ct.primary_email LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.to') LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.cc') LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.from') LIKE ?
+        )
+      GROUP BY period
+      ORDER BY period
+    `
+
+    const person1Pattern = `%${email1}%`
+    const person2Pattern = `%${email2}%`
+
+    const [person1Data, person2Data] = await Promise.all([
+      db.all(person1Query, [person1Pattern, person1Pattern, person1Pattern, person1Pattern]),
+      db.all(person2Query, [person2Pattern, person2Pattern, person2Pattern, person2Pattern])
+    ])
+
+    // Create a map for easier lookup
+    const person1Map = new Map(person1Data.map(row => [row.period, row.count]))
+    const person2Map = new Map(person2Data.map(row => [row.period, row.count]))
+
+    // Generate complete time series with all periods
+    const result = []
+    const now = new Date()
+    
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(now)
+      let period: string
+      
+      if (timeRange === 'week' || timeRange === 'month') {
+        date.setDate(date.getDate() - i)
+        period = date.toISOString().split('T')[0] // YYYY-MM-DD
+      } else { // year
+        date.setMonth(date.getMonth() - i)
+        period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` // YYYY-MM
+      }
+
+      const person1Count = person1Map.get(period) || 0
+      const person2Count = person2Map.get(period) || 0
+
+      let displayPeriod: string
+      if (timeRange === 'week') {
+        displayPeriod = date.toLocaleDateString('en-US', { weekday: 'short' })
+      } else if (timeRange === 'month') {
+        displayPeriod = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else {
+        displayPeriod = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      }
+
+      result.push({
+        period: displayPeriod,
+        date: period,
+        person1Count,
+        person2Count,
+        total: person1Count + person2Count
+      })
+    }
+
+    return result
+  }
 }

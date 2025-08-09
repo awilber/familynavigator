@@ -20,6 +20,7 @@ import {
 import ContactsList from './ContactsList'
 import CommunicationTimeline from './CommunicationTimeline'
 import CommunicationTrendsChart from './CommunicationTrendsChart'
+import CommunicationOverviewChart from './CommunicationOverviewChart'
 import GmailIntegration from './GmailIntegration'
 import EmailFilteringPanel from './EmailFilteringPanel'
 import PeopleAndCommunications from './PeopleAndCommunications'
@@ -178,6 +179,9 @@ const CommunicationsView: React.FC = () => {
 
       {/* Gmail Integration */}
       <GmailIntegration />
+
+      {/* Communication Overview Chart */}
+      <CommunicationOverviewChart />
 
       {/* Email Filtering Panel - REPLACED WITH UNIFIED PANEL
       <EmailFilteringPanel 

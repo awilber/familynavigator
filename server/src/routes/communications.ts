@@ -80,6 +80,35 @@ router.get('/stats', async (req, res) => {
   }
 })
 
+// GET /api/communications/overview-chart - Get data for overview chart
+router.get('/overview-chart', async (req, res) => {
+  try {
+    const { person1, person2, timeRange = 'month' } = req.query as {
+      person1?: string
+      person2?: string
+      timeRange?: 'week' | 'month' | 'year'
+    }
+
+    // Default to awilber and alexapowell if not specified
+    const email1 = person1 || 'awilber@gmail.com'
+    const email2 = person2 || 'alexapowell@gmail.com'
+
+    // Get overview chart data from repository
+    const chartData = await communicationRepo.getOverviewChartData(email1, email2, timeRange)
+    
+    res.json({
+      success: true,
+      data: chartData
+    })
+  } catch (error) {
+    console.error('Error fetching overview chart data:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch overview chart data'
+    })
+  }
+})
+
 // GET /api/communications/:id - Get specific communication
 router.get('/:id', async (req, res) => {
   try {
