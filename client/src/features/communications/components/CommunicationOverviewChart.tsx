@@ -11,7 +11,16 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from '@mui/material'
 import {
   LineChart,
@@ -33,6 +42,16 @@ interface CommunicationData {
   total: number
 }
 
+interface EmailRecord {
+  id: number
+  timestamp: string
+  direction: 'incoming' | 'outgoing'
+  subject: string
+  from: string
+  to: string
+  person: 'person1' | 'person2'
+}
+
 interface CommunicationOverviewChartProps {
   sx?: object
 }
@@ -43,6 +62,8 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
   const [person2, setPerson2] = useState<string>('alexapowell@gmail.com')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<CommunicationData[]>([])
+  const [emailData, setEmailData] = useState<EmailRecord[]>([])
+  const [activeTab, setActiveTab] = useState(0)
 
   // Available people for selection
   const availablePeople = [
@@ -57,26 +78,51 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
     const loadChartData = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/communications/overview-chart?person1=${encodeURIComponent(person1)}&person2=${encodeURIComponent(person2)}&timeRange=${timeRange}`)
-        if (!response.ok) {
+        // Load chart data
+        const chartResponse = await fetch(`/api/communications/overview-chart?person1=${encodeURIComponent(person1)}&person2=${encodeURIComponent(person2)}&timeRange=${timeRange}`)
+        if (!chartResponse.ok) {
           throw new Error('Failed to fetch chart data')
         }
-        const result = await response.json()
-        if (result.success && result.data) {
-          setData(result.data.map((item: any) => ({
+        const chartResult = await chartResponse.json()
+        
+        // Load email records for the table
+        const emailResponse = await fetch(`/api/communications?limit=50&gmail_query=(from:${encodeURIComponent(person1)} OR to:${encodeURIComponent(person1)} OR from:${encodeURIComponent(person2)} OR to:${encodeURIComponent(person2)})`)
+        let emailRecords: EmailRecord[] = []
+        if (emailResponse.ok) {
+          const emailResult = await emailResponse.json()
+          if (emailResult.success && emailResult.data) {
+            emailRecords = emailResult.data.map((comm: any, index: number) => ({
+              id: comm.id || index,
+              timestamp: comm.timestamp || new Date().toISOString(),
+              direction: comm.direction || 'incoming',
+              subject: comm.subject || 'No Subject',
+              from: comm.contact_email || comm.metadata?.from || 'Unknown',
+              to: comm.metadata?.to || 'Unknown',
+              person: (comm.contact_email?.includes(person1.split('@')[0]) || 
+                      comm.metadata?.from?.includes(person1.split('@')[0]) ||
+                      comm.metadata?.to?.includes(person1.split('@')[0])) ? 'person1' : 'person2'
+            }))
+          }
+        }
+
+        if (chartResult.success && chartResult.data) {
+          setData(chartResult.data.map((item: any) => ({
             period: item.period,
             date: new Date(item.date),
             person1Count: item.person1Count,
             person2Count: item.person2Count,
             total: item.total
           })))
+          setEmailData(emailRecords)
         } else {
-          console.error('API returned error:', result.error || 'Unknown error')
+          console.error('API returned error:', chartResult.error || 'Unknown error')
           setData([])
+          setEmailData([])
         }
       } catch (error) {
         console.error('Error loading chart data:', error)
         setData([])
+        setEmailData([])
       } finally {
         setLoading(false)
       }
@@ -143,7 +189,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
             />
           </Box>
 
-          {/* Legend with Color Blocks and To/From Context */}
+          {/* Legend with Color Blocks and Direction Context */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ 
@@ -154,7 +200,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                 border: '2px solid #1976d2'
               }} />
               <Typography variant="body2" fontWeight="bold" color="#1976d2">
-                {person1Name} (To/From)
+                {person1Name} Communications
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -166,7 +212,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                 border: '2px solid #ed6c02'
               }} />
               <Typography variant="body2" fontWeight="bold" color="#ed6c02">
-                {person2Name} (To/From)
+                {person2Name} Communications
               </Typography>
             </Box>
           </Box>
@@ -217,63 +263,138 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
           </Box>
         </Box>
 
-        {/* Chart */}
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+            <Tab label="Chart View" />
+            <Tab label="Email Data" />
+          </Tabs>
+        </Box>
+
+        {/* Tab Content */}
         <Box sx={{ height: 400, position: 'relative' }}>
-          {loading ? (
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              height: '100%',
-              flexDirection: 'column'
-            }}>
-              <CircularProgress size={40} sx={{ mb: 2 }} />
-              <Typography variant="body2" color="text.secondary">
-                Loading communication data...
-              </Typography>
-            </Box>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="period"
-                  tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#d0d0d0' }}
-                  tickLine={{ stroke: '#d0d0d0' }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#d0d0d0' }}
-                  tickLine={{ stroke: '#d0d0d0' }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="line"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="person1Count"
-                  stroke="#1976d2"
-                  strokeWidth={3}
-                  dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: '#1976d2' }}
-                  name={`${person1Name} (To/From)`}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="person2Count"
-                  stroke="#ed6c02"
-                  strokeWidth={3}
-                  dot={{ fill: '#ed6c02', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: '#ed6c02' }}
-                  name={`${person2Name} (To/From)`}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          {activeTab === 0 && (
+            <>
+              {loading ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  height: '100%',
+                  flexDirection: 'column'
+                }}>
+                  <CircularProgress size={40} sx={{ mb: 2 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading communication data...
+                  </Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis 
+                      dataKey="period"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#d0d0d0' }}
+                      tickLine={{ stroke: '#d0d0d0' }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: '#d0d0d0' }}
+                      tickLine={{ stroke: '#d0d0d0' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="person1Count"
+                      stroke="#1976d2"
+                      strokeWidth={3}
+                      dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#1976d2' }}
+                      name={`${person1Name} Communications`}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="person2Count"
+                      stroke="#ed6c02"
+                      strokeWidth={3}
+                      dot={{ fill: '#ed6c02', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#ed6c02' }}
+                      name={`${person2Name} Communications`}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </>
+          )}
+          
+          {activeTab === 1 && (
+            <TableContainer component={Paper} sx={{ height: '100%', overflow: 'auto' }}>
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Direction</TableCell>
+                    <TableCell>From</TableCell>
+                    <TableCell>To</TableCell>
+                    <TableCell>Subject</TableCell>
+                    <TableCell>Person</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {emailData.map((email) => (
+                    <TableRow key={email.id}>
+                      <TableCell>
+                        {new Date(email.timestamp).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={email.direction} 
+                          color={email.direction === 'outgoing' ? 'primary' : 'secondary'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {email.from}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {email.to}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {email.subject}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={email.person === 'person1' ? person1Name : person2Name}
+                          color={email.person === 'person1' ? 'primary' : 'warning'}
+                          size="small"
+                          sx={{
+                            backgroundColor: email.person === 'person1' ? '#1976d220' : '#ed6c0220',
+                            color: email.person === 'person1' ? '#1976d2' : '#ed6c02',
+                            borderColor: email.person === 'person1' ? '#1976d2' : '#ed6c02'
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {emailData.length === 0 && !loading && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography variant="body2" color="text.secondary">
+                          No email data available. Connect Gmail and sync emails to see data.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </Box>
 
