@@ -109,6 +109,41 @@ router.get('/overview-chart', async (req, res) => {
   }
 })
 
+// GET /api/communications/between-persons - Get communications between two specific people
+router.get('/between-persons', async (req, res) => {
+  try {
+    const { person1, person2, limit = '50', offset = '0' } = req.query as {
+      person1?: string
+      person2?: string
+      limit?: string
+      offset?: string
+    }
+
+    // Default to awilber and alexapowell if not specified
+    const email1 = person1 || 'awilber@gmail.com'
+    const email2 = person2 || 'alexapowell@gmail.com'
+
+    // Get communications between the two people using same logic as chart
+    const emails = await communicationRepo.getBetweenPersonsData(email1, email2, parseInt(limit), parseInt(offset))
+    
+    res.json({
+      success: true,
+      data: emails,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: emails.length === parseInt(limit)
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching between-persons data:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch between-persons data'
+    })
+  }
+})
+
 // GET /api/communications/:id - Get specific communication
 router.get('/:id', async (req, res) => {
   try {

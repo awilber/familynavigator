@@ -599,4 +599,71 @@ export class CommunicationRepository {
 
     return result
   }
+
+  async getBetweenPersonsData(email1: string, email2: string, limit: number = 50, offset: number = 0): Promise<{
+    id: number
+    timestamp: string
+    direction: 'incoming' | 'outgoing'
+    subject: string
+    from: string
+    to: string
+    person: 'person1' | 'person2'
+  }[]> {
+    const db = await this.getDb()
+    
+    const person1Username = email1.split('@')[0] // awilber
+    const person2Username = email2.split('@')[0] // alexapowell
+    
+    // Query for communications between the two people using the same logic as the chart
+    // This ensures consistency between chart counts and table data
+    const query = `
+      SELECT 
+        c.id,
+        c.timestamp,
+        c.direction,
+        c.subject,
+        c.content,
+        c.metadata
+      FROM communications c
+      WHERE c.timestamp >= datetime('2025-01-01')
+        AND (
+          -- Person1 to Person2: outgoing from awilber containing alexapowell
+          (c.direction = 'outgoing' AND ? = 'awilber' AND (
+            c.content LIKE ? OR
+            c.subject LIKE ? OR
+            JSON_EXTRACT(c.metadata, '$.to') LIKE ? OR
+            JSON_EXTRACT(c.metadata, '$.cc') LIKE ?
+          )) OR
+          -- Person2 to Person1: incoming from alexapowell to awilber
+          (c.direction = 'incoming' AND c.content LIKE '%from alexapowell%' AND c.content LIKE '%awilber%') OR
+          (c.subject LIKE '%from:alexapowell%' AND c.content LIKE '%awilber%') OR
+          (c.direction = 'outgoing' AND c.content LIKE '%alexapowell%' AND c.content LIKE '%to awilber%')
+        )
+      ORDER BY c.timestamp DESC
+      LIMIT ? OFFSET ?
+    `
+    
+    const person1Pattern = `%${person1Username}%`
+    const person2Pattern = `%${person2Username}%`
+    
+    const results = await db.all(query, [
+      person1Username, person2Pattern, person2Pattern, person2Pattern, person2Pattern,
+      limit, offset
+    ])
+    
+    // Transform results to match expected format
+    return results.map((row: any) => {
+      const isFromPerson1 = row.direction === 'outgoing' && person1Username === 'awilber'
+      
+      return {
+        id: row.id,
+        timestamp: row.timestamp,
+        direction: row.direction,
+        subject: row.subject || 'No Subject',
+        from: isFromPerson1 ? email1 : email2,
+        to: isFromPerson1 ? email2 : email1,
+        person: isFromPerson1 ? 'person1' as const : 'person2' as const
+      }
+    })
+  }
 }

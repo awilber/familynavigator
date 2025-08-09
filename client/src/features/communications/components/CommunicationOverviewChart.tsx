@@ -85,35 +85,21 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
         }
         const chartResult = await chartResponse.json()
         
-        // Load email records for the table - only emails between the two selected people
-        const emailResponse = await fetch(`/api/communications?limit=50`)
+        // Load email records for the table - use same filtering logic as chart
+        const emailResponse = await fetch(`/api/communications/between-persons?person1=${encodeURIComponent(person1)}&person2=${encodeURIComponent(person2)}&limit=50`)
         let emailRecords: EmailRecord[] = []
         if (emailResponse.ok) {
           const emailResult = await emailResponse.json()
           if (emailResult.success && emailResult.data) {
-            const person1Username = person1.split('@')[0]
-            const person2Username = person2.split('@')[0]
-            
-            emailRecords = emailResult.data
-              .filter((comm: any) => {
-                // Filter for emails between the two people only
-                const isFromPerson1 = comm.direction === 'outgoing' && person1Username === 'awilber'
-                const isFromPerson2 = comm.content?.includes(person2Username) || comm.subject?.includes(person2Username)
-                const isToPerson1 = comm.content?.includes(person1Username) || comm.subject?.includes(person1Username)
-                const isToPerson2 = comm.content?.includes(person2Username) || comm.subject?.includes(person2Username)
-                
-                // Only include if it's between the two people
-                return (isFromPerson1 && isToPerson2) || (isFromPerson2 && isToPerson1)
-              })
-              .map((comm: any, index: number) => ({
-                id: comm.id || index,
-                timestamp: comm.timestamp || new Date().toISOString(),
-                direction: comm.direction || 'outgoing',
-                subject: comm.subject || 'No Subject',
-                from: comm.direction === 'outgoing' ? person1 : (comm.content?.includes(person2Username) ? person2 : 'Unknown'),
-                to: comm.direction === 'outgoing' ? (comm.content?.includes(person2Username) ? person2 : person1) : person1,
-                person: comm.direction === 'outgoing' ? 'person1' : 'person2'
-              }))
+            emailRecords = emailResult.data.map((email: any) => ({
+              id: email.id,
+              timestamp: email.timestamp,
+              direction: email.direction,
+              subject: email.subject,
+              from: email.from,
+              to: email.to,
+              person: email.person
+            }))
           }
         }
 
