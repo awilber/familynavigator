@@ -85,22 +85,34 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
         }
         const chartResult = await chartResponse.json()
         
-        // Load email records for the table - only outgoing messages (sent by the persons)
-        const emailResponse = await fetch(`/api/communications?limit=50&direction=outgoing`)
+        // Load email records for the table - only emails between the two selected people
+        const emailResponse = await fetch(`/api/communications?limit=50`)
         let emailRecords: EmailRecord[] = []
         if (emailResponse.ok) {
           const emailResult = await emailResponse.json()
           if (emailResult.success && emailResult.data) {
+            const person1Username = person1.split('@')[0]
+            const person2Username = person2.split('@')[0]
+            
             emailRecords = emailResult.data
-              .filter((comm: any) => comm.direction === 'outgoing') // Only outgoing messages
+              .filter((comm: any) => {
+                // Filter for emails between the two people only
+                const isFromPerson1 = comm.direction === 'outgoing' && person1Username === 'awilber'
+                const isFromPerson2 = comm.content?.includes(person2Username) || comm.subject?.includes(person2Username)
+                const isToPerson1 = comm.content?.includes(person1Username) || comm.subject?.includes(person1Username)
+                const isToPerson2 = comm.content?.includes(person2Username) || comm.subject?.includes(person2Username)
+                
+                // Only include if it's between the two people
+                return (isFromPerson1 && isToPerson2) || (isFromPerson2 && isToPerson1)
+              })
               .map((comm: any, index: number) => ({
                 id: comm.id || index,
                 timestamp: comm.timestamp || new Date().toISOString(),
-                direction: 'outgoing', // All are outgoing now
+                direction: comm.direction || 'outgoing',
                 subject: comm.subject || 'No Subject',
-                from: 'awilber@gmail.com', // Since all outgoing in sample data are from awilber
-                to: comm.metadata?.to || 'Unknown',
-                person: 'person1' // All outgoing messages are from person1 (awilber) in sample data
+                from: comm.direction === 'outgoing' ? person1 : (comm.content?.includes(person2Username) ? person2 : 'Unknown'),
+                to: comm.direction === 'outgoing' ? (comm.content?.includes(person2Username) ? person2 : person1) : person1,
+                person: comm.direction === 'outgoing' ? 'person1' : 'person2'
               }))
           }
         }
@@ -200,7 +212,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                 border: '2px solid #1976d2'
               }} />
               <Typography variant="body2" fontWeight="bold" color="#1976d2">
-                Sent by {person1Name}
+                {person1Name} → {person2Name}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -212,7 +224,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                 border: '2px solid #ed6c02'
               }} />
               <Typography variant="body2" fontWeight="bold" color="#ed6c02">
-                Sent by {person2Name}
+                {person2Name} → {person1Name}
               </Typography>
             </Box>
           </Box>
@@ -267,7 +279,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
             <Tab label="Chart View" />
-            <Tab label="Sent Emails" />
+            <Tab label="Between Persons" />
           </Tabs>
         </Box>
 
@@ -315,7 +327,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                       strokeWidth={3}
                       dot={{ fill: '#1976d2', strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6, fill: '#1976d2' }}
-                      name={`Sent by ${person1Name}`}
+                      name={`${person1Name} → ${person2Name}`}
                       connectNulls
                     />
                     <Line
@@ -325,7 +337,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                       strokeWidth={3}
                       dot={{ fill: '#ed6c02', strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6, fill: '#ed6c02' }}
-                      name={`Sent by ${person2Name}`}
+                      name={`${person2Name} → ${person1Name}`}
                       connectNulls
                     />
                   </LineChart>
@@ -387,7 +399,7 @@ const CommunicationOverviewChart: React.FC<CommunicationOverviewChartProps> = ({
                     <TableRow>
                       <TableCell colSpan={6} align="center">
                         <Typography variant="body2" color="text.secondary">
-                          No sent emails available. Connect Gmail and sync emails to see outgoing messages.
+                          No emails found between {person1Name} and {person2Name}. Connect Gmail and sync emails to see communication exchanges.
                         </Typography>
                       </TableCell>
                     </TableRow>

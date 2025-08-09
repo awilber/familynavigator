@@ -503,14 +503,14 @@ export class CommunicationRepository {
         periods = 30
     }
 
-    // Filter for emails SENT FROM each person only (not received)
-    // This shows actual sending patterns, not just involvement
+    // Conjunctive filter: Only show emails BETWEEN the two selected people
+    // Person1 sends TO Person2, or Person2 sends TO Person1
     
     const person1Username = email1.split('@')[0] // awilber
     const person2Username = email2.split('@')[0] // alexapowell
     
-    // Query for emails SENT BY person1 (outgoing from awilber only)
-    const person1Query = `
+    // Query for emails FROM person1 TO person2 (awilber sending to alexapowell)
+    const person1ToPerson2Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
         COUNT(*) as count
@@ -518,33 +518,42 @@ export class CommunicationRepository {
       WHERE c.timestamp >= datetime('2025-01-01')
         AND c.direction = 'outgoing'
         AND ? = 'awilber'
+        AND (
+          -- Check if alexapowell is in the recipient fields
+          c.content LIKE ? OR
+          c.subject LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.to') LIKE ? OR
+          JSON_EXTRACT(c.metadata, '$.cc') LIKE ?
+        )
       GROUP BY period
       ORDER BY period
     `
 
-    // Query for emails SENT BY person2 (look for alexapowell as sender)
-    // Since sample data doesn't have proper metadata, we'll look for patterns indicating alexapowell sent
-    const person2Query = `
+    // Query for emails FROM person2 TO person1 (alexapowell sending to awilber)
+    const person2ToPerson1Query = `
       SELECT 
         strftime('${dateFormat}', c.timestamp) as period,
         COUNT(*) as count
       FROM communications c
       WHERE c.timestamp >= datetime('2025-01-01')
         AND (
-          -- Look for outgoing messages that mention alexapowell as sender
-          (c.direction = 'outgoing' AND c.content LIKE '%from alexapowell%') OR
-          -- Look for messages with alexapowell in subject as sender  
-          (c.subject LIKE '%from:alexapowell%') OR
-          -- For demo purposes, assume any message mentioning alexapowell could be from them
-          (c.content LIKE '%alexapowell%' AND c.direction = 'outgoing')
+          -- Messages from alexapowell to awilber
+          (c.direction = 'incoming' AND c.content LIKE '%from alexapowell%' AND c.content LIKE '%awilber%') OR
+          (c.subject LIKE '%from:alexapowell%' AND c.content LIKE '%awilber%') OR
+          -- In real production data, this would check JSON_EXTRACT(c.metadata, '$.from') LIKE '%alexapowell%'
+          -- AND JSON_EXTRACT(c.metadata, '$.to') LIKE '%awilber%'
+          (c.direction = 'outgoing' AND c.content LIKE '%alexapowell%' AND c.content LIKE '%to awilber%')
         )
       GROUP BY period
       ORDER BY period
     `
 
+    const person1Pattern = `%${person1Username}%`
+    const person2Pattern = `%${person2Username}%`
+
     const [person1Data, person2Data] = await Promise.all([
-      db.all(person1Query, [person1Username]),
-      db.all(person2Query, [])
+      db.all(person1ToPerson2Query, [person1Username, person2Pattern, person2Pattern, person2Pattern, person2Pattern]),
+      db.all(person2ToPerson1Query, [])
     ])
 
     // Create a map for easier lookup
