@@ -15,6 +15,8 @@ import {
   Grid,
   Card,
   CardContent,
+  Tabs,
+  Tab
 } from '@mui/material'
 import {
   Google as GoogleIcon,
@@ -24,7 +26,9 @@ import {
   Stop as StopIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  Message as MessageIcon,
+  Description as DocumentIcon
 } from '@mui/icons-material'
 
 interface GmailStatus {
@@ -433,173 +437,195 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
     )
   }
 
+  const [activeDataSourceTab, setActiveDataSourceTab] = useState(0)
+
+  const handleDataSourceTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveDataSourceTab(newValue)
+  }
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <GoogleIcon sx={{ fontSize: 32, color: '#EA4335' }} />
+    <Paper sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
         <Typography variant="h5" fontWeight="bold">
-          Gmail Integration
+          Data Sources
         </Typography>
-        {status.isAuthenticated && (
-          <Chip
-            icon={<CheckCircleIcon />}
-            label="Connected"
-            color="success"
-            variant="outlined"
-          />
-        )}
       </Box>
 
-      {!status.isAuthenticated ? (
-        <Box>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Connect your Gmail account to import and analyze your email communications.
-            This will allow you to search through years of email history and identify patterns.
-          </Alert>
-          
-          <Button
-            variant="contained"
-            startIcon={<GoogleIcon />}
-            onClick={handleAuthenticate}
-            size="large"
-            sx={{
-              backgroundColor: '#EA4335',
-              '&:hover': { backgroundColor: '#d33b2a' }
-            }}
-          >
-            Connect Gmail Account
-          </Button>
-        </Box>
-      ) : (
-        <Box>
-          {/* Account Info */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">
-                  Connected Account
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<SyncIcon />}
-                  onClick={() => handleTestSync(5)}
-                  color="secondary"
-                >
-                  Test Connection
-                </Button>
-              </Box>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Email Address
-                  </Typography>
-                  <Typography variant="body1">
-                    {status.profile?.emailAddress}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Messages
-                  </Typography>
-                  <Typography variant="body1">
-                    {status.profile?.messagesTotal?.toLocaleString() || 'Unknown'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Threads
-                  </Typography>
-                  <Typography variant="body1">
-                    {status.profile?.threadsTotal?.toLocaleString() || 'Unknown'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+      <Tabs value={activeDataSourceTab} onChange={handleDataSourceTabChange} sx={{ mb: 2 }}>
+        <Tab icon={<GoogleIcon />} label="Gmail" />
+        <Tab icon={<MessageIcon />} label="Text Messages" />
+        <Tab icon={<DocumentIcon />} label="Files" />
+      </Tabs>
 
-          {/* Sync Status */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                {getStatusIcon()}
-                <Typography variant="h6">
-                  Sync Status
-                </Typography>
-                <Chip
-                  label={progress.status.charAt(0).toUpperCase() + progress.status.slice(1)}
-                  color={getStatusColor() as any}
-                  size="small"
-                />
-              </Box>
+      {/* Gmail Tab */}
+      {activeDataSourceTab === 0 && (
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <GoogleIcon sx={{ fontSize: 24, color: '#EA4335' }} />
+            <Typography variant="h6" fontWeight="bold">
+              Gmail Integration
+            </Typography>
+            {status.isAuthenticated && (
+              <Chip
+                icon={<CheckCircleIcon />}
+                label="Connected"
+                color="success"
+                variant="outlined"
+                size="small"
+              />
+            )}
+          </Box>
 
-              {progress.status === 'running' && (
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2">
-                      Processing batch {progress.currentBatch} of {progress.totalBatches}
+          {!status.isAuthenticated ? (
+            <Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Connect your Gmail account to import and analyze your email communications.
+                This will allow you to search through years of email history and identify patterns.
+              </Alert>
+              
+              <Button
+                variant="contained"
+                startIcon={<GoogleIcon />}
+                onClick={handleAuthenticate}
+                sx={{
+                  backgroundColor: '#EA4335',
+                  '&:hover': { backgroundColor: '#d33b2a' }
+                }}
+              >
+                Connect Gmail Account
+              </Button>
+            </Box>
+          ) : (
+            <Box>
+              {/* Account Info */}
+              <Card sx={{ mb: 2 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Connected Account
                     </Typography>
-                    <Typography variant="body2">
-                      {getProgressPercentage()}%
-                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<SyncIcon />}
+                      onClick={() => handleTestSync(5)}
+                      color="secondary"
+                      sx={{ py: 0.25 }}
+                    >
+                      Test Connection
+                    </Button>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={getProgressPercentage()} 
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {progress.processedMessages.toLocaleString()} of {progress.totalMessages.toLocaleString()} messages processed
-                  </Typography>
-                </Box>
-              )}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        Email Address
+                      </Typography>
+                      <Typography variant="body1">
+                        {status.profile?.emailAddress}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Messages
+                      </Typography>
+                      <Typography variant="body1">
+                        {status.profile?.messagesTotal?.toLocaleString() || 'Unknown'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Threads
+                      </Typography>
+                      <Typography variant="body1">
+                        {status.profile?.threadsTotal?.toLocaleString() || 'Unknown'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
 
-              {progress.status === 'error' && (
-                <Alert 
-                  severity="error" 
-                  sx={{ mb: 2 }}
-                  action={
-                    progress.error?.includes('authentication required') ||
-                    progress.error?.includes('re-authenticate') ? (
-                      <Button
-                        color="inherit"
-                        size="small"
-                        onClick={handleRevoke}
-                        sx={{ ml: 1 }}
-                      >
-                        Disconnect & Reconnect
-                      </Button>
-                    ) : null
-                  }
-                >
-                  <Typography variant="body2" component="div">
-                    <strong>Sync Error:</strong> {progress.error}
-                  </Typography>
-                  {(progress.error?.includes('authentication required') ||
-                    progress.error?.includes('re-authenticate')) && (
-                    <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
-                      This usually indicates a permission scope issue. Please disconnect and reconnect your Gmail account to get the proper permissions.
+              {/* Sync Status */}
+              <Card sx={{ mb: 2 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    {getStatusIcon()}
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Sync Status
                     </Typography>
+                    <Chip
+                      label={progress.status.charAt(0).toUpperCase() + progress.status.slice(1)}
+                      color={getStatusColor() as any}
+                      size="small"
+                    />
+                  </Box>
+
+                  {progress.status === 'running' && (
+                    <Box sx={{ mb: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="body2">
+                          Processing batch {progress.currentBatch} of {progress.totalBatches}
+                        </Typography>
+                        <Typography variant="body2">
+                          {getProgressPercentage()}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={getProgressPercentage()} 
+                        sx={{ height: 6, borderRadius: 3 }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {progress.processedMessages.toLocaleString()} of {progress.totalMessages.toLocaleString()} messages processed
+                      </Typography>
+                    </Box>
                   )}
-                </Alert>
-              )}
 
-              {progress.status === 'completed' && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Sync completed successfully! Processed {progress.processedMessages.toLocaleString()} messages.
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+                  {progress.status === 'error' && (
+                    <Alert 
+                      severity="error" 
+                      sx={{ mb: 1 }}
+                      action={
+                        progress.error?.includes('authentication required') ||
+                        progress.error?.includes('re-authenticate') ? (
+                          <Button
+                            color="inherit"
+                            size="small"
+                            onClick={handleRevoke}
+                            sx={{ ml: 1 }}
+                          >
+                            Disconnect & Reconnect
+                          </Button>
+                        ) : null
+                      }
+                    >
+                      <Typography variant="body2" component="div">
+                        <strong>Sync Error:</strong> {progress.error}
+                      </Typography>
+                      {(progress.error?.includes('authentication required') ||
+                        progress.error?.includes('re-authenticate')) && (
+                        <Typography variant="body2" sx={{ mt: 0.5 }} color="text.secondary">
+                          This usually indicates a permission scope issue. Please disconnect and reconnect your Gmail account to get the proper permissions.
+                        </Typography>
+                      )}
+                    </Alert>
+                  )}
 
-          {/* Detailed Progress Information */}
-          {(progress.status === 'running' || progress.status === 'paused' || progress.detailedErrors.length > 0) && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Detailed Progress Information
-                  </Typography>
+                  {progress.status === 'completed' && (
+                    <Alert severity="success" sx={{ mb: 1 }}>
+                      Sync completed successfully! Processed {progress.processedMessages.toLocaleString()} messages.
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Detailed Progress Information */}
+              {(progress.status === 'running' || progress.status === 'paused' || progress.detailedErrors.length > 0) && (
+                <Card sx={{ mb: 2 }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Detailed Progress Information
+                      </Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
                       size="small"
@@ -621,19 +647,19 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
                   </Box>
                 </Box>
                 
-                {/* Current Operation */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" color="primary">
-                    Current Operation: {progress.currentOperation}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {progress.operationDetails}
-                  </Typography>
-                </Box>
+                    {/* Current Operation */}
+                    <Box sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" color="primary">
+                        Current Operation: {progress.currentOperation}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {progress.operationDetails}
+                      </Typography>
+                    </Box>
 
-                {/* Performance Metrics */}
-                {progress.status === 'running' && progress.messagesPerSecond > 0 && (
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    {/* Performance Metrics */}
+                    {progress.status === 'running' && progress.messagesPerSecond > 0 && (
+                      <Grid container spacing={1} sx={{ mb: 1 }}>
                     <Grid item xs={6} sm={3}>
                       <Typography variant="body2" color="text.secondary">
                         Messages/Second
@@ -665,13 +691,13 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
                   </Grid>
                 )}
 
-                {/* Error Details */}
-                {showVerboseLogging && progress.detailedErrors.length > 0 && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" color="error" gutterBottom>
-                      Errors ({progress.detailedErrors.length})
-                    </Typography>
-                    <Box sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                    {/* Error Details */}
+                    {showVerboseLogging && progress.detailedErrors.length > 0 && (
+                      <Box sx={{ mb: 1 }}>
+                        <Typography variant="subtitle2" color="error" gutterBottom>
+                          Errors ({progress.detailedErrors.length})
+                        </Typography>
+                        <Box sx={{ maxHeight: 150, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 0.5 }}>
                       {progress.detailedErrors.slice(-5).map((error, index) => (
                         <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: error.isCritical ? 'error.light' : 'grey.100', borderRadius: 1 }}>
                           <Typography variant="caption" color="text.secondary">
@@ -692,13 +718,13 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
                   </Box>
                 )}
 
-                {/* API Call Log */}
-                {showVerboseLogging && progress.rawApiResponses.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="primary" gutterBottom>
-                      Recent API Calls ({progress.rawApiResponses.length})
-                    </Typography>
-                    <Box sx={{ maxHeight: 150, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                    {/* API Call Log */}
+                    {showVerboseLogging && progress.rawApiResponses.length > 0 && (
+                      <Box>
+                        <Typography variant="subtitle2" color="primary" gutterBottom>
+                          Recent API Calls ({progress.rawApiResponses.length})
+                        </Typography>
+                        <Box sx={{ maxHeight: 120, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 0.5 }}>
                       {progress.rawApiResponses.slice(-10).map((api, index) => (
                         <Box key={index} sx={{ mb: 0.5, fontFamily: 'monospace', fontSize: '0.75rem' }}>
                           <Typography variant="caption" color={api.statusCode >= 400 ? 'error.main' : 'success.main'}>
@@ -714,113 +740,147 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
                     </Box>
                   </Box>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                {progress.status === 'idle' || progress.status === 'completed' || progress.status === 'error' ? (
+                  <>
+                    <Button
+                      variant="contained"
+                      startIcon={<SyncIcon />}
+                      onClick={() => setSettingsOpen(true)}
+                      color="primary"
+                    >
+                      Start Full Sync
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SyncIcon />}
+                      onClick={() => handleTestSync(10)}
+                      color="secondary"
+                    >
+                      Test Sync (10 messages)
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SyncIcon />}
+                      onClick={() => handleTestSync(50)}
+                      color="secondary"
+                    >
+                      Test Sync (50 messages)
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SyncIcon />}
+                      onClick={() => handleTestSync(100)}
+                      color="secondary"
+                    >
+                      Test Sync (100 messages)
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<SyncIcon />}
+                      onClick={handleIncrementalSync}
+                    >
+                      Incremental Sync
+                    </Button>
+                  </>
+                ) : progress.status === 'running' ? (
+                  <>
+                    <Button
+                      variant="outlined"
+                      startIcon={<PauseIcon />}
+                      onClick={handlePauseSync}
+                      color="warning"
+                    >
+                      Pause
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<StopIcon />}
+                      onClick={handleStopSync}
+                      color="error"
+                    >
+                      Stop
+                    </Button>
+                  </>
+                ) : progress.status === 'paused' ? (
+                  <>
+                    <Button
+                      variant="contained"
+                      startIcon={<PlayIcon />}
+                      onClick={handleResumeSync}
+                      color="primary"
+                    >
+                      Resume
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<StopIcon />}
+                      onClick={handleStopSync}
+                      color="error"
+                    >
+                      Stop
+                    </Button>
+                  </>
+                ) : null}
+
+                <Button
+                  variant="outlined"
+                  startIcon={<GoogleIcon />}
+                  onClick={handleAuthenticate}
+                  color="primary"
+                  sx={{ mr: 1 }}
+                >
+                  Reconnect Gmail
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={handleRevoke}
+                  color="error"
+                  sx={{ ml: 'auto' }}
+                >
+                  Disconnect Account
+                </Button>
+              </Box>
+            </Box>
           )}
+        </Box>
+      )}
 
+      {/* Text Messages Tab */}
+      {activeDataSourceTab === 1 && (
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <MessageIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Text Messages Integration
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Import and analyze text messages from your device's Messages app.
+          </Typography>
+          <Button variant="outlined" disabled>
+            Coming Soon
+          </Button>
+        </Box>
+      )}
 
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-            {progress.status === 'idle' || progress.status === 'completed' || progress.status === 'error' ? (
-              <>
-                <Button
-                  variant="contained"
-                  startIcon={<SyncIcon />}
-                  onClick={() => setSettingsOpen(true)}
-                  color="primary"
-                >
-                  Start Full Sync
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<SyncIcon />}
-                  onClick={() => handleTestSync(10)}
-                  color="secondary"
-                >
-                  Test Sync (10 messages)
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<SyncIcon />}
-                  onClick={() => handleTestSync(50)}
-                  color="secondary"
-                >
-                  Test Sync (50 messages)
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<SyncIcon />}
-                  onClick={() => handleTestSync(100)}
-                  color="secondary"
-                >
-                  Test Sync (100 messages)
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<SyncIcon />}
-                  onClick={handleIncrementalSync}
-                >
-                  Incremental Sync
-                </Button>
-              </>
-            ) : progress.status === 'running' ? (
-              <>
-                <Button
-                  variant="outlined"
-                  startIcon={<PauseIcon />}
-                  onClick={handlePauseSync}
-                  color="warning"
-                >
-                  Pause
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<StopIcon />}
-                  onClick={handleStopSync}
-                  color="error"
-                >
-                  Stop
-                </Button>
-              </>
-            ) : progress.status === 'paused' ? (
-              <>
-                <Button
-                  variant="contained"
-                  startIcon={<PlayIcon />}
-                  onClick={handleResumeSync}
-                  color="primary"
-                >
-                  Resume
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<StopIcon />}
-                  onClick={handleStopSync}
-                  color="error"
-                >
-                  Stop
-                </Button>
-              </>
-            ) : null}
-
-            <Button
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              onClick={handleAuthenticate}
-              color="primary"
-              sx={{ mr: 2 }}
-            >
-              Reconnect Gmail
-            </Button>
-            <Button
-              variant="text"
-              onClick={handleRevoke}
-              color="error"
-              sx={{ ml: 'auto' }}
-            >
-              Disconnect Account
-            </Button>
-          </Box>
+      {/* Files Tab */}
+      {activeDataSourceTab === 2 && (
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <DocumentIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            File Import
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Upload and analyze documents, PDFs, and other file types.
+          </Typography>
+          <Button variant="outlined" disabled>
+            Coming Soon
+          </Button>
         </Box>
       )}
 
