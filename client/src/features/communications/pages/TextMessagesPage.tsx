@@ -34,7 +34,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Sync as SyncIcon,
-  Database as DatabaseIcon,
+  Storage as DatabaseIcon,
   FileUpload as FileUploadIcon,
   History as HistoryIcon
 } from '@mui/icons-material'
