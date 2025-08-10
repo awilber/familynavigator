@@ -12,6 +12,9 @@ import {
   ListItemText, 
   Toolbar, 
   Typography,
+  FormControl,
+  Select,
+  MenuItem,
   useTheme as useMuiTheme,
   useMediaQuery
 } from '@mui/material'
@@ -28,6 +31,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { logout } from '../features/auth/authSlice'
+import { useUIMode } from '../contexts/UIModeContext'
 import ThemeToggle from './ThemeToggle'
 
 const drawerWidth = 240
@@ -43,6 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
+  const { mode, setMode } = useUIMode()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -118,7 +123,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {menuItems.find(item => item.path === location.pathname)?.text || 'Family Navigator'}
           </Typography>
-          <ThemeToggle />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as 'classic' | 'advanced')}
+                displayEmpty
+                sx={{
+                  color: 'inherit',
+                  '.MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.7)',
+                  },
+                  '.MuiSvgIcon-root': {
+                    color: 'inherit',
+                  }
+                }}
+              >
+                <MenuItem value="classic">Classic Mode</MenuItem>
+                <MenuItem value="advanced">Advanced Mode</MenuItem>
+              </Select>
+            </FormControl>
+            <ThemeToggle />
+          </Box>
         </Toolbar>
       </AppBar>
       <Box
