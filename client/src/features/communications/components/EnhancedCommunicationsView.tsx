@@ -71,7 +71,7 @@ const EnhancedStatCard: React.FC<{
     }}
     onClick={onClick}
   >
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 1 }}>
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 0.25 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box
           sx={{
@@ -216,7 +216,7 @@ const EnhancedCommunicationsView: React.FC = () => {
   }, [])
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
       {/* Enhanced Header with Controls */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Box>
@@ -269,7 +269,7 @@ const EnhancedCommunicationsView: React.FC = () => {
 
       {/* Insight Alert */}
       {insight && (
-        <Alert severity={insight.type} sx={{ mb: 2 }}>
+        <Alert severity={insight.type} sx={{ mb: 0.5 }}>
           <AlertTitle>{insight.title}</AlertTitle>
           {insight.message}
         </Alert>
@@ -277,7 +277,7 @@ const EnhancedCommunicationsView: React.FC = () => {
 
       {/* Enhanced Stats Cards */}
       {stats && (
-        <Grid container spacing={3}>
+        <Grid container spacing={1}>
           <Grid item xs={12} sm={6} md={3}>
             <EnhancedStatCard
               title="Total Communications"
@@ -343,8 +343,8 @@ const EnhancedCommunicationsView: React.FC = () => {
 
       {/* Advanced Filters Panel */}
       {showAdvancedFilters && (
-        <Paper sx={{ p: 2, backgroundColor: 'var(--color-background-elevated)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <Paper sx={{ p: 1, backgroundColor: 'var(--color-background-elevated)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
             <FilterIcon />
             <Typography variant="h6">Advanced Filters & Analytics</Typography>
           </Box>
@@ -365,11 +365,11 @@ const EnhancedCommunicationsView: React.FC = () => {
       )}
 
       {/* Enhanced Main Content */}
-      <Grid container spacing={3} sx={{ flex: '1 1 auto', minHeight: 500 }}>
+      <Grid container spacing={1} sx={{ flex: '1 1 auto', minHeight: 500 }}>
         {/* Enhanced People & Communications Panel */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ p: 0.5, borderBottom: 1, borderColor: 'divider' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <GroupIcon />
                 <Typography variant="h6">Smart Contact Hub</Typography>

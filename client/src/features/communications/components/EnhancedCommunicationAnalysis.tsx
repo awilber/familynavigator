@@ -105,7 +105,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1.5 }}>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1 }}>
           {children}
         </Box>
       )}
@@ -312,8 +312,8 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
     const groupedInsights = groupInsightsByCategory()
 
     return (
-      <Box sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'between', mb: 1 }}>
+      <Box sx={{ mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'between', mb: 0.5 }}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AIIcon color="primary" />
             AI-Powered Insights
@@ -329,7 +329,7 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
             onChange={() => setExpandedInsightCategory(
               expandedInsightCategory === category ? '' : category
             )}
-            sx={{ mb: 1 }}
+            sx={{ mb: 0.5 }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
@@ -347,7 +347,7 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
               <Stack spacing={1}>
                 {categoryInsights.map((insight) => (
                   <Card key={insight.id} variant="outlined" sx={{ border: `1px solid`, borderColor: `${insight.type}.main` }}>
-                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                         {getInsightIcon(insight.type, insight.category)}
                         <Box sx={{ flex: 1 }}>
@@ -387,15 +387,15 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
   }
 
   const renderSmartFilters = () => (
-    <Box sx={{ mb: 2 }}>
-      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+    <Box sx={{ mb: 1 }}>
+      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
         <FilterIcon color="primary" />
         Smart Filters
       </Typography>
       <Stack spacing={1}>
         {smartFilters.map((filter) => (
           <Card key={filter.id} variant="outlined">
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -424,7 +424,7 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
   return (
     <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
       {/* Enhanced Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, pb: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, pb: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
           <Badge badgeContent="AI" color="success">
             <AnalyticsIcon sx={{ color: 'primary.main' }} />

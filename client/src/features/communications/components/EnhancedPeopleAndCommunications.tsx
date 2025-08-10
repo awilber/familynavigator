@@ -669,9 +669,9 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
 
   return (
     <Card sx={{ height: '100%', minHeight: 400 }}>
-      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+      <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1.5 }}>
         {/* Enhanced Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Badge badgeContent="AI" color="success">
               <GroupIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.3rem' }} />
@@ -749,11 +749,11 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
               </IconButton>
             )
           }}
-          sx={{ mb: 2, '& .MuiOutlinedInput-input': { py: 1 } }}
+          sx={{ mb: 1.5, '& .MuiOutlinedInput-input': { py: 0.75 } }}
         />
 
         {/* Enhanced Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -812,7 +812,7 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
         </Box>
 
         {viewMode === 'groups' && (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 1.5 }}>
             <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
               Group by:
             </Typography>
@@ -831,7 +831,7 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
           </Box>
         )}
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: 1.5 }} />
 
         {/* Enhanced Items List */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
