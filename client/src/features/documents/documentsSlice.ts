@@ -13,7 +13,7 @@ export interface Document {
   description?: string
 }
 
-interface DocumentsState {
+export interface DocumentsState {
   documents: Document[]
   loading: boolean
   error: string | null

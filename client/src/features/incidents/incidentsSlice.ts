@@ -22,7 +22,7 @@ export interface Incident {
   updatedAt: string
 }
 
-interface IncidentsState {
+export interface IncidentsState {
   incidents: Incident[]
   loading: boolean
   error: string | null

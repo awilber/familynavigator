@@ -279,7 +279,7 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
           }
           break
         case 'relationship':
-          if ('relationship_type' in item) {
+          if ('name' in item) {
             groupKey = item.relationship_type || 'Unknown'
           } else {
             groupKey = 'Email Addresses'

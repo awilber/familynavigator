@@ -297,8 +297,12 @@ const EmailFilteringPanel: React.FC<EmailFilteringPanelProps> = ({
               justifyContent: 'center'
             }}>
               <Divider 
-                orientation={{ xs: 'horizontal', md: 'vertical' }}
-                sx={{ display: { xs: 'block', md: 'block' } }}
+                orientation="horizontal"
+                sx={{ display: { xs: 'block', md: 'none' } }}
+              />
+              <Divider 
+                orientation="vertical"
+                sx={{ display: { xs: 'none', md: 'block' } }}
               />
               
               <Box sx={{ 
@@ -341,8 +345,12 @@ const EmailFilteringPanel: React.FC<EmailFilteringPanelProps> = ({
               </Box>
               
               <Divider 
-                orientation={{ xs: 'horizontal', md: 'vertical' }}
-                sx={{ display: { xs: 'block', md: 'block' } }}
+                orientation="horizontal"
+                sx={{ display: { xs: 'block', md: 'none' } }}
+              />
+              <Divider 
+                orientation="vertical"
+                sx={{ display: { xs: 'none', md: 'block' } }}
               />
             </Box>
           </Grid>

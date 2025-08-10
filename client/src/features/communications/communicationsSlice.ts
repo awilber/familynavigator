@@ -13,7 +13,7 @@ export interface Communication {
   attachments?: string[]
 }
 
-interface CommunicationsState {
+export interface CommunicationsState {
   communications: Communication[]
   loading: boolean
   error: string | null

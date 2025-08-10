@@ -120,6 +120,11 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
     startDate: '',
     endDate: ''
   })
+  const [activeDataSourceTab, setActiveDataSourceTab] = useState(0)
+
+  const handleDataSourceTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveDataSourceTab(newValue)
+  }
 
   useEffect(() => {
     loadGmailStatus()
@@ -435,12 +440,6 @@ const GmailIntegration: React.FC<GmailIntegrationProps> = ({ filterPersons }) =>
         <Typography>Loading Gmail integration...</Typography>
       </Paper>
     )
-  }
-
-  const [activeDataSourceTab, setActiveDataSourceTab] = useState(0)
-
-  const handleDataSourceTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveDataSourceTab(newValue)
   }
 
   return (

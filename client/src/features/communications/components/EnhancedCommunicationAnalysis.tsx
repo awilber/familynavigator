@@ -337,7 +337,7 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
                 <Typography variant="subtitle2" textTransform="capitalize" fontWeight="bold">
                   {category} Analysis
                 </Typography>
-                <Badge badgeContent={categoryInsights.length} color="secondary" size="small" />
+                <Badge badgeContent={categoryInsights.length} color="secondary" />
                 {categoryInsights.some(i => i.impact === 'high') && (
                   <StarIcon color="warning" sx={{ fontSize: 16, ml: 'auto' }} />
                 )}

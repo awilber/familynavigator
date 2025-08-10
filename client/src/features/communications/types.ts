@@ -4,6 +4,7 @@ export interface Contact {
   display_name?: string
   primary_email?: string
   primary_phone?: string
+  relationship_type?: 'legal' | 'family' | 'friend' | 'professional' | 'other'
   metadata?: Record<string, any>
   created_at: string
   updated_at: string
