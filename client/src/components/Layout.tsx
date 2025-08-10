@@ -15,6 +15,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Collapse,
   useTheme as useMuiTheme,
   useMediaQuery
 } from '@mui/material'
@@ -26,7 +27,11 @@ import {
   Warning as IncidentIcon,
   CalendarMonth as CalendarIcon,
   Psychology as AIIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  ExpandLess,
+  ExpandMore,
+  Google as GoogleIcon,
+  Message as MessageIcon
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
@@ -44,6 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const muiTheme = useMuiTheme()
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'))
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const [communicationsOpen, setCommunicationsOpen] = React.useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -59,11 +65,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Communications', icon: <EmailIcon />, path: '/communications' },
     { text: 'Documents', icon: <DocumentIcon />, path: '/documents' },
     { text: 'Incidents', icon: <IncidentIcon />, path: '/incidents' },
     { text: 'Calendar', icon: <CalendarIcon />, path: '/calendar' },
     { text: 'AI Assistant', icon: <AIIcon />, path: '/assistant' },
+  ]
+
+  const communicationsItems = [
+    { text: 'Gmail', icon: <GoogleIcon />, path: '/communications/gmail' },
+    { text: 'Text Messages', icon: <MessageIcon />, path: '/communications/messages' },
   ]
 
   const drawer = (
@@ -74,6 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Typography>
       </Toolbar>
       <List>
+        {/* Standard Menu Items */}
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
@@ -90,6 +101,49 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </ListItemButton>
           </ListItem>
         ))}
+
+        {/* Communications Menu with Nested Items */}
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname.startsWith('/communications')}
+            onClick={() => {
+              setCommunicationsOpen(!communicationsOpen)
+              // Navigate to main Communications page when collapsed
+              if (!communicationsOpen) {
+                navigate('/communications')
+                if (isMobile) {
+                  setMobileOpen(false)
+                }
+              }
+            }}
+          >
+            <ListItemIcon><EmailIcon /></ListItemIcon>
+            <ListItemText primary="Communications" />
+            {communicationsOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+        </ListItem>
+        <Collapse in={communicationsOpen} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {communicationsItems.map((item) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton
+                  sx={{ pl: 4 }}
+                  selected={location.pathname === item.path}
+                  onClick={() => {
+                    navigate(item.path)
+                    if (isMobile) {
+                      setMobileOpen(false)
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Collapse>
+
         <ListItem disablePadding>
           <ListItemButton onClick={handleLogout}>
             <ListItemIcon><LogoutIcon /></ListItemIcon>

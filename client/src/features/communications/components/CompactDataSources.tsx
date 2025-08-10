@@ -51,6 +51,9 @@ interface SyncProgress {
 }
 
 const CompactDataSources: React.FC = () => {
+  // Simplified state for debugging
+  console.log('CompactDataSources component is rendering!')
+  
   const [expanded, setExpanded] = useState<string | false>('gmail')
   const [gmailStatus, setGmailStatus] = useState<GmailStatus>({ isAuthenticated: false })
   const [syncProgress, setSyncProgress] = useState<SyncProgress>({
@@ -372,64 +375,6 @@ const CompactDataSources: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Files Section */}
-      <Accordion 
-        expanded={expanded === 'files'} 
-        onChange={handleAccordionChange('files')}
-        sx={{ 
-          boxShadow: 'none',
-          border: '1px solid',
-          borderColor: 'divider',
-          '&:before': { display: 'none' }
-        }}
-      >
-        <AccordionSummary 
-          expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
-          sx={{ 
-            minHeight: 32, 
-            '& .MuiAccordionSummary-content': { 
-              margin: '8px 0',
-              alignItems: 'center'
-            },
-            pl: 2,
-            pr: 1,
-            py: 0.5
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DocumentIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-            <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.8rem' }}>
-              Files
-            </Typography>
-            <Chip
-              label="Soon"
-              size="small"
-              color="warning"
-              variant="outlined"
-              sx={{ 
-                height: 18, 
-                fontSize: '0.6rem',
-                ml: 'auto'
-              }}
-            />
-          </Box>
-        </AccordionSummary>
-        <AccordionDetails sx={{ pt: 0, pb: 1, px: 2 }}>
-          <Box sx={{ pl: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 1 }}>
-              Upload and analyze documents, PDFs, and other file types.
-            </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              disabled
-              sx={{ fontSize: '0.7rem', py: 0.5, px: 1, height: 26 }}
-            >
-              Coming Soon
-            </Button>
-          </Box>
-        </AccordionDetails>
-      </Accordion>
     </Box>
   )
 }
