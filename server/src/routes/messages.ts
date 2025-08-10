@@ -378,7 +378,7 @@ async function validateDatabaseFile(dbPath: string): Promise<ValidationResult> {
 
   } catch (error) {
     console.error('[Messages] Database validation error:', error)
-    errors.push(`Database validation failed: ${error.message}`)
+    errors.push(`Database validation failed: ${error instanceof Error ? error.message : String(error)}`)
     
     return {
       isValid: false,
