@@ -1,0 +1,25 @@
+# SECURITY RESTRICTIONS FOR CLAUDE CODE
+# This file prevents Claude from accessing sensitive system directories
+
+# FORBIDDEN PATHS - Claude must never access these locations:
+FORBIDDEN_PATHS=(
+    "/Users/arlonwilber/Library/Messages/"
+    "/Users/arlonwilber/Library/Messages/chat.db"
+    "/Users/arlonwilber/Library/Messages/Attachments/"
+    "~/Library/Messages/"
+    "*/Library/Messages/*"
+)
+
+# DEVELOPMENT DATABASE LOCATIONS - Use these instead:
+DEV_DATABASE_PATH="./data/messages/databases/chat-dev-copy.db"
+DEV_DATABASE_DIR="./data/messages/databases/"
+
+# SAFETY NOTICE:
+# - Only use development copies for testing and development
+# - Never read from or write to the live Messages database
+# - Always operate on isolated copies within the project directory
+# - Respect user privacy and data security at all times
+
+CREATED_DATE=$(date)
+COPY_CREATED=true
+SYSTEM_ACCESS_REVOKED=true

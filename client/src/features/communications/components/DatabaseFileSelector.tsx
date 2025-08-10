@@ -342,15 +342,17 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <AppleIcon sx={{ mr: 2, color: '#007AFF' }} />
-                <Typography variant="h6">System Messages Database</Typography>
+                <Typography variant="h6">Development Messages Database</Typography>
               </Box>
               
               {systemDatabase ? (
                 <Box>
-                  <Alert severity="info" sx={{ mb: 2 }}>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      Development Database Ready
+                    </Typography>
                     <Typography variant="body2">
-                      Your system Messages database has been detected. This will create a safe copy for processing
-                      without affecting your Messages app functionality.
+                      Using a secure development copy of your Messages database. This ensures your live Messages data is never modified during development.
                     </Typography>
                   </Alert>
                   <List disablePadding>
@@ -358,9 +360,12 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
                   </List>
                 </Box>
               ) : (
-                <Alert severity="warning">
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Development Database Not Found
+                  </Typography>
                   <Typography variant="body2">
-                    System Messages database not found or not accessible. You can upload a database file manually below.
+                    No development copy found. You can upload a Messages database file manually below, or create a development copy if you have access to the system database.
                   </Typography>
                 </Alert>
               )}
@@ -378,7 +383,7 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="body2">
                   Upload a Messages database file (chat.db) from your system or backup. 
-                  The file picker will default to your Messages folder location.
+                  All uploaded files are processed securely and never modify your original data.
                 </Typography>
               </Alert>
 

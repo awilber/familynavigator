@@ -57,16 +57,16 @@ interface ValidationResult {
 // Get system Messages database information
 router.get('/system-db-info', async (req, res) => {
   try {
-    console.log('[Messages] Getting system database info')
+    console.log('[Messages] Getting development database info')
     
-    // Detect system Messages database path
-    const homeDir = os.homedir()
-    const messagesDbPath = path.join(homeDir, 'Library', 'Messages', 'chat.db')
+    // Use development database copy instead of live system database
+    // SECURITY: Never access live Messages database directly
+    const devDbPath = path.join(process.cwd(), 'data', 'messages', 'databases', 'chat-dev-copy.db')
     
-    console.log(`[Messages] Checking for database at: ${messagesDbPath}`)
+    console.log(`[Messages] Checking for development database at: ${devDbPath}`)
     
-    if (!existsSync(messagesDbPath)) {
-      console.log('[Messages] System database not found')
+    if (!existsSync(devDbPath)) {
+      console.log('[Messages] Development database not found')
       return res.json({
         success: true,
         data: null
@@ -74,47 +74,25 @@ router.get('/system-db-info', async (req, res) => {
     }
 
     // Get file stats
-    const stats = await fs.stat(messagesDbPath)
+    const stats = await fs.stat(devDbPath)
     
-    // Check if file is accessible (not always guaranteed on macOS)
-    let isAccessible = true
-    let isInUse = false
-    
-    try {
-      await fs.access(messagesDbPath, fs.constants.R_OK)
-    } catch (error) {
-      console.log('[Messages] Database file not accessible:', error)
-      isAccessible = false
-    }
-
-    // Basic check if Messages app might be using the file
-    // This is a simple heuristic - in practice, macOS allows read access even when Messages is running
-    try {
-      const processes = await import('child_process')
-      const { exec } = processes
-      
-      exec('pgrep -f Messages', (error, stdout) => {
-        if (stdout.trim()) {
-          isInUse = true
-        }
-      })
-    } catch (error) {
-      // Ignore process check errors
-    }
+    // Development database is always accessible and not in use
+    const isAccessible = true
+    const isInUse = false
 
     const databaseInfo: DatabaseFileInfo = {
-      path: messagesDbPath,
-      filename: 'chat.db',
+      path: devDbPath,
+      filename: 'chat-dev-copy.db',
       size: stats.size,
       lastModified: stats.mtime,
-      isSystemFile: true,
+      isSystemFile: false, // This is now a development copy
       isValid: false, // Will be validated separately
       validationErrors: [],
       isAccessible,
       isInUse
     }
 
-    console.log('[Messages] System database found:', {
+    console.log('[Messages] Development database found:', {
       size: stats.size,
       lastModified: stats.mtime,
       isAccessible
@@ -133,6 +111,21 @@ router.get('/system-db-info', async (req, res) => {
   }
 })
 
+// Security function to prevent access to system Messages database
+function isSystemMessagesPath(filePath: string): boolean {
+  const normalizedPath = path.resolve(filePath)
+  const forbiddenPaths = [
+    path.join(os.homedir(), 'Library', 'Messages'),
+    '/Library/Messages',
+    'Library/Messages'
+  ]
+  
+  return forbiddenPaths.some(forbidden => 
+    normalizedPath.includes(forbidden) || 
+    normalizedPath.includes('chat.db') && !normalizedPath.includes('chat-dev-copy.db')
+  )
+}
+
 // Validate database file
 router.post('/validate-db', upload.single('database'), async (req, res) => {
   let dbPath: string
@@ -146,9 +139,20 @@ router.post('/validate-db', upload.single('database'), async (req, res) => {
       shouldCleanup = true
       console.log('[Messages] Validating uploaded database:', req.file.originalname)
     } else if (req.body.path) {
-      // System file path
-      dbPath = req.body.path
-      console.log('[Messages] Validating system database:', dbPath)
+      // Path validation for security
+      const requestedPath = req.body.path
+      
+      // SECURITY CHECK: Prevent access to live system Messages database
+      if (isSystemMessagesPath(requestedPath)) {
+        console.log('[Messages] SECURITY: Blocked attempt to access system Messages database:', requestedPath)
+        return res.status(403).json({
+          success: false,
+          error: 'Access to system Messages database is not allowed. Please use the development copy or upload a file.'
+        })
+      }
+      
+      dbPath = requestedPath
+      console.log('[Messages] Validating provided database:', dbPath)
     } else {
       return res.status(400).json({
         success: false,
@@ -391,5 +395,77 @@ async function validateDatabaseFile(dbPath: string): Promise<ValidationResult> {
     }
   }
 }
+
+// Secure copy endpoint - creates a safe development copy from system database
+router.post('/copy-system-database', async (req, res) => {
+  try {
+    console.log('[Messages] Creating secure development copy of system database')
+    
+    // Source: System Messages database
+    const homeDir = os.homedir()
+    const systemDbPath = path.join(homeDir, 'Library', 'Messages', 'chat.db')
+    
+    // Destination: Development copy in project directory
+    const devDbDir = path.join(process.cwd(), 'data', 'messages', 'databases')
+    const devDbPath = path.join(devDbDir, 'chat-dev-copy.db')
+    
+    // Ensure development directory exists
+    if (!existsSync(devDbDir)) {
+      await fs.mkdir(devDbDir, { recursive: true })
+    }
+    
+    // Check if system database exists
+    if (!existsSync(systemDbPath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'System Messages database not found'
+      })
+    }
+    
+    // Get source file size for progress tracking
+    const sourceStats = await fs.stat(systemDbPath)
+    console.log(`[Messages] Copying ${(sourceStats.size / (1024 * 1024)).toFixed(1)} MB database`)
+    
+    // Create secure copy
+    await fs.copyFile(systemDbPath, devDbPath)
+    
+    // Verify the copy was successful
+    const copyStats = await fs.stat(devDbPath)
+    if (copyStats.size !== sourceStats.size) {
+      throw new Error('Copy verification failed - file sizes do not match')
+    }
+    
+    console.log('[Messages] Secure development copy created successfully')
+    
+    // Return information about the new development copy
+    const databaseInfo: DatabaseFileInfo = {
+      path: devDbPath,
+      filename: 'chat-dev-copy.db',
+      size: copyStats.size,
+      lastModified: copyStats.mtime,
+      isSystemFile: false,
+      isValid: false, // Will need validation
+      validationErrors: [],
+      isAccessible: true,
+      isInUse: false
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        message: 'Development copy created successfully',
+        database: databaseInfo,
+        sourceSize: sourceStats.size,
+        copySize: copyStats.size
+      }
+    })
+  } catch (error) {
+    console.error('[Messages] Error creating development copy:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create development copy: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
 
 export default router
