@@ -10,6 +10,8 @@ import Layout from './components/Layout'
 import Login from './features/auth/Login'
 import Dashboard from './features/dashboard/Dashboard'
 import Communications from './features/communications/Communications'
+import GmailPage from './features/communications/pages/GmailPage'
+import TextMessagesPage from './features/communications/pages/TextMessagesPage'
 import Documents from './features/documents/Documents'
 import Incidents from './features/incidents/Incidents'
 import Calendar from './features/calendar/Calendar'
@@ -31,6 +33,8 @@ function App() {
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/communications" element={<Communications />} />
+                  <Route path="/communications/gmail" element={<GmailPage />} />
+                  <Route path="/communications/messages" element={<TextMessagesPage />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/incidents" element={<Incidents />} />
                   <Route path="/calendar" element={<Calendar />} />
