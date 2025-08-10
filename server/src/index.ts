@@ -12,6 +12,7 @@ import documentsRoutes from './routes/documents'
 import incidentsRoutes from './routes/incidents'
 import gmailRoutes from './routes/gmail'
 import emailFilteringRoutes from './routes/email-filtering'
+import messagesRoutes from './routes/messages'
 import { databaseService } from './services/database'
 
 dotenv.config({ path: path.join(__dirname, '../../.env') })
@@ -31,6 +32,7 @@ app.use('/api/documents', documentsRoutes)
 app.use('/api/incidents', incidentsRoutes)
 app.use('/api/gmail', gmailRoutes)
 app.use('/api/email-filtering', emailFilteringRoutes)
+app.use('/api/messages', messagesRoutes)
 
 app.use(errorHandler)
 

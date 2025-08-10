@@ -38,10 +38,24 @@ import {
   FileUpload as FileUploadIcon,
   History as HistoryIcon
 } from '@mui/icons-material'
+import DatabaseFileSelector from '../components/DatabaseFileSelector'
+
+interface DatabaseFileInfo {
+  path: string
+  filename: string
+  size: number
+  lastModified: Date
+  isSystemFile: boolean
+  isValid: boolean
+  messageCount?: number
+  validationErrors: string[]
+  isAccessible: boolean
+  isInUse: boolean
+}
 
 interface TextMessageStatus {
   isConnected: boolean
-  databasePath?: string
+  selectedDatabase?: DatabaseFileInfo
   lastSync?: string
   totalMessages?: number
   totalContacts?: number
@@ -53,6 +67,7 @@ interface TextMessageStatus {
 
 const TextMessagesPage: React.FC = () => {
   const [status, setStatus] = useState<TextMessageStatus>({ isConnected: false })
+  const [selectedDatabase, setSelectedDatabase] = useState<DatabaseFileInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
   const [importProgress, setImportProgress] = useState(0)
@@ -73,15 +88,12 @@ const TextMessagesPage: React.FC = () => {
   const checkTextMessageStatus = async () => {
     try {
       setLoading(true)
-      // Placeholder for actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock status - in real implementation, this would check for Messages.app database access
+      // Update status based on selected database
       setStatus({
-        isConnected: false,
-        databasePath: '~/Library/Messages/chat.db',
+        isConnected: selectedDatabase?.isValid || false,
+        selectedDatabase,
         lastSync: undefined,
-        totalMessages: 0,
+        totalMessages: selectedDatabase?.messageCount || 0,
         totalContacts: 0
       })
     } catch (error) {
@@ -89,6 +101,17 @@ const TextMessagesPage: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDatabaseSelected = (database: DatabaseFileInfo) => {
+    console.log('Database selected:', database)
+    setSelectedDatabase(database)
+    setStatus(prev => ({
+      ...prev,
+      isConnected: database.isValid,
+      selectedDatabase: database,
+      totalMessages: database.messageCount || 0
+    }))
   }
 
   const handleImportMessages = async () => {
@@ -127,38 +150,68 @@ const TextMessagesPage: React.FC = () => {
                 macOS Messages Integration
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {status.isConnected ? 'Connected and ready' : 'Not connected'}
+                {status.isConnected ? 'Database connected and validated' : 'Select a database to begin'}
               </Typography>
             </Box>
           </Box>
           
           <Chip
-            icon={status.isConnected ? <CheckCircleIcon /> : <WarningIcon />}
-            label={status.isConnected ? 'Connected' : 'Coming Soon'}
-            color={status.isConnected ? 'success' : 'warning'}
+            icon={status.isConnected ? <CheckCircleIcon /> : <DatabaseIcon />}
+            label={status.isConnected ? 'Connected' : 'Select Database'}
+            color={status.isConnected ? 'success' : 'primary'}
             variant="filled"
           />
         </Box>
 
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2" fontWeight="bold">
-            Messages App Integration - Coming Soon
-          </Typography>
-          <Typography variant="body2">
-            This feature will import and analyze text messages from your macOS Messages app by accessing the local chat.db database.
-          </Typography>
-        </Alert>
+        {!status.isConnected && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2" fontWeight="bold">
+              Database Selection Required
+            </Typography>
+            <Typography variant="body2">
+              Select a Messages database file to import and analyze text messages. The system will automatically detect your Messages app database or you can upload a backup file.
+            </Typography>
+          </Alert>
+        )}
 
-        {status.isConnected && (
+        {status.isConnected && status.selectedDatabase && (
           <Box>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight="bold">
+                Database Validated Successfully
+              </Typography>
+              <Typography variant="body2">
+                The selected database is valid and ready for import. All processing will be done securely with a local copy.
+              </Typography>
+            </Alert>
+            
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+              <Chip 
+                icon={status.selectedDatabase.isSystemFile ? <AppleIcon /> : <DatabaseIcon />}
+                label={status.selectedDatabase.isSystemFile ? 'System Database' : 'Uploaded File'}
+                color="info"
+                variant="outlined"
+              />
+              <Chip 
+                label={`${(status.selectedDatabase.size / (1024 * 1024)).toFixed(1)} MB`}
+                color="default"
+                variant="outlined"
+              />
+              <Chip 
+                label={`${status.selectedDatabase.messageCount?.toLocaleString() || 0} messages`}
+                color="success"
+                variant="outlined"
+              />
+            </Box>
+
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Database Path:</strong> {status.databasePath}
+              <strong>Database:</strong> {status.selectedDatabase.filename}
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Total Messages:</strong> {status.totalMessages?.toLocaleString()}
+              <strong>Last Modified:</strong> {status.selectedDatabase.lastModified.toLocaleString()}
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Total Contacts:</strong> {status.totalContacts?.toLocaleString()}
+              <strong>Total Messages:</strong> {status.totalMessages?.toLocaleString() || 0}
             </Typography>
             {status.lastSync && (
               <Typography variant="body2">
@@ -204,25 +257,33 @@ const TextMessagesPage: React.FC = () => {
             variant="contained"
             startIcon={<DatabaseIcon />}
             onClick={handleImportMessages}
-            disabled={isImporting}
+            disabled={!status.isConnected || isImporting}
           >
             {isImporting ? 'Importing...' : 'Import Messages'}
           </Button>
           <Button
             variant="outlined"
             startIcon={<FileUploadIcon />}
-            disabled
+            disabled={!status.isConnected}
           >
             Export Backup
           </Button>
           <Button
             variant="outlined"
             startIcon={<SyncIcon />}
-            disabled
+            disabled={!status.isConnected}
           >
             Sync Now
           </Button>
         </Box>
+
+        {!status.isConnected && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              Select a Messages database first to enable import functionality.
+            </Typography>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   )
@@ -392,7 +453,19 @@ const TextMessagesPage: React.FC = () => {
 
       <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} sx={{ mb: 3 }}>
         <Tab label="Overview" />
-        <Tab label="Import" />
+        <Tab 
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              Database
+              {!selectedDatabase && <Chip size="small" label="Required" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
+              {selectedDatabase?.isValid && <Chip size="small" label="Ready" color="success" sx={{ height: 16, fontSize: '0.6rem' }} />}
+            </Box>
+          }
+        />
+        <Tab 
+          label="Import"
+          disabled={!selectedDatabase?.isValid}
+        />
         <Tab label="Features" />
         <Tab label="Settings" />
       </Tabs>
@@ -400,25 +473,46 @@ const TextMessagesPage: React.FC = () => {
       {activeTab === 0 && (
         <Box>
           {renderConnectionStatus()}
-          {renderImportControls()}
         </Box>
       )}
 
       {activeTab === 1 && (
         <Box>
-          {renderImportControls()}
-          <Alert severity="info" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              The import process will read your Messages app database and create a local copy of your text message history for analysis. 
-              This process respects your privacy and all data remains on your device.
-            </Typography>
-          </Alert>
+          <DatabaseFileSelector
+            onDatabaseSelected={handleDatabaseSelected}
+            selectedDatabase={selectedDatabase}
+          />
         </Box>
       )}
 
-      {activeTab === 2 && renderFeaturePreview()}
+      {activeTab === 2 && (
+        <Box>
+          {selectedDatabase ? (
+            <>
+              {renderImportControls()}
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  The import process will read your Messages app database and create a local copy of your text message history for analysis. 
+                  This process respects your privacy and all data remains on your device.
+                </Typography>
+              </Alert>
+            </>
+          ) : (
+            <Alert severity="warning">
+              <Typography variant="body2" fontWeight="bold">
+                Database Selection Required
+              </Typography>
+              <Typography variant="body2">
+                Please select a Messages database in the Database tab before proceeding with import.
+              </Typography>
+            </Alert>
+          )}
+        </Box>
+      )}
 
-      {activeTab === 3 && renderSettings()}
+      {activeTab === 3 && renderFeaturePreview()}
+
+      {activeTab === 4 && renderSettings()}
     </Box>
   )
 }
