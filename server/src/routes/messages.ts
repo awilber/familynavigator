@@ -6,6 +6,9 @@ import { existsSync } from 'fs'
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
 import os from 'os'
+import { MessagesSchemaAnalyzer } from '../services/messagesSchemaAnalyzer'
+import { MessagesAnalytics } from '../services/messagesAnalytics'
+import { MessagesContactsAnalyzer } from '../services/messagesContactsAnalyzer'
 
 const router = express.Router()
 
@@ -464,6 +467,215 @@ router.post('/copy-system-database', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to create development copy: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Schema analysis endpoint
+router.get('/schema-info', async (req, res) => {
+  try {
+    console.log('[Messages] Analyzing database schema')
+    
+    const analyzer = new MessagesSchemaAnalyzer()
+    const schemaInfo = await analyzer.analyzeSchema()
+    
+    res.json({
+      success: true,
+      data: schemaInfo
+    })
+  } catch (error) {
+    console.error('[Messages] Error analyzing schema:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze database schema: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Schema validation endpoint
+router.get('/schema-validation', async (req, res) => {
+  try {
+    console.log('[Messages] Validating database schema')
+    
+    const analyzer = new MessagesSchemaAnalyzer()
+    const validation = await analyzer.validateRequiredTables()
+    
+    res.json({
+      success: true,
+      data: validation
+    })
+  } catch (error) {
+    console.error('[Messages] Error validating schema:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate database schema: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Table preview endpoint
+router.get('/table-preview/:tableName', async (req, res) => {
+  try {
+    const { tableName } = req.params
+    const limit = parseInt(req.query.limit as string) || 5
+    
+    console.log(`[Messages] Getting table preview: ${tableName}`)
+    
+    const analyzer = new MessagesSchemaAnalyzer()
+    const preview = await analyzer.getTablePreview(tableName, limit)
+    
+    res.json({
+      success: true,
+      data: {
+        tableName,
+        rows: preview,
+        limit
+      }
+    })
+  } catch (error) {
+    console.error('[Messages] Error getting table preview:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get table preview: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Message statistics endpoint
+router.get('/statistics', async (req, res) => {
+  try {
+    console.log('[Messages] Generating message statistics')
+    
+    const analytics = new MessagesAnalytics()
+    const stats = await analytics.getMessageStatistics()
+    
+    res.json({
+      success: true,
+      data: stats
+    })
+  } catch (error) {
+    console.error('[Messages] Error generating statistics:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate statistics: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Frequency timeline endpoint
+router.get('/frequency-timeline', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days as string) || 30
+    console.log(`[Messages] Generating frequency timeline for ${days} days`)
+    
+    const analytics = new MessagesAnalytics()
+    const timeline = await analytics.getFrequencyTimeline(days)
+    
+    res.json({
+      success: true,
+      data: {
+        timeline,
+        days,
+        totalEntries: timeline.length
+      }
+    })
+  } catch (error) {
+    console.error('[Messages] Error generating frequency timeline:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate frequency timeline: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Contacts analysis endpoint
+router.get('/contacts', async (req, res) => {
+  try {
+    console.log('[Messages] Analyzing contacts')
+    
+    const analyzer = new MessagesContactsAnalyzer()
+    const contactStats = await analyzer.analyzeContacts()
+    
+    res.json({
+      success: true,
+      data: contactStats
+    })
+  } catch (error) {
+    console.error('[Messages] Error analyzing contacts:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze contacts: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Contact details endpoint
+router.get('/contact/:id', async (req, res) => {
+  try {
+    const contactId = parseInt(req.params.id)
+    if (isNaN(contactId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid contact ID'
+      })
+    }
+    
+    console.log(`[Messages] Getting contact details: ${contactId}`)
+    
+    const analyzer = new MessagesContactsAnalyzer()
+    const contact = await analyzer.getContactDetails(contactId)
+    
+    if (!contact) {
+      return res.status(404).json({
+        success: false,
+        error: 'Contact not found'
+      })
+    }
+    
+    res.json({
+      success: true,
+      data: contact
+    })
+  } catch (error) {
+    console.error('[Messages] Error getting contact details:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get contact details: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Contact search endpoint
+router.get('/contacts/search', async (req, res) => {
+  try {
+    const query = req.query.q as string
+    const limit = parseInt(req.query.limit as string) || 10
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters'
+      })
+    }
+    
+    console.log(`[Messages] Searching contacts: "${query}"`)
+    
+    const analyzer = new MessagesContactsAnalyzer()
+    const contacts = await analyzer.searchContacts(query.trim(), limit)
+    
+    res.json({
+      success: true,
+      data: {
+        query,
+        results: contacts,
+        count: contacts.length
+      }
+    })
+  } catch (error) {
+    console.error('[Messages] Error searching contacts:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search contacts: ' + (error instanceof Error ? error.message : String(error))
     })
   }
 })
