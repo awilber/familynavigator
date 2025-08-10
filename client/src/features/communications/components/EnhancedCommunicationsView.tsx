@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Box,
   Grid,
@@ -42,6 +42,7 @@ import CommunicationOverviewChart from './CommunicationOverviewChart'
 import GmailIntegration from './GmailIntegration'
 import EmailFilteringPanel from './EmailFilteringPanel'
 import PeopleAndCommunications from './PeopleAndCommunications'
+import EnhancedPeopleAndCommunications from './EnhancedPeopleAndCommunications'
 import EnhancedCommunicationAnalysis from './EnhancedCommunicationAnalysis'
 import { Contact, CommunicationStats } from '../types'
 import { communicationsApi } from '../services/api'
@@ -70,7 +71,7 @@ const EnhancedStatCard: React.FC<{
     }}
     onClick={onClick}
   >
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box
           sx={{
@@ -144,7 +145,7 @@ const EnhancedCommunicationsView: React.FC = () => {
     }
   }, [autoRefresh])
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true)
       const data = await communicationsApi.getCommunicationStats()
@@ -154,7 +155,7 @@ const EnhancedCommunicationsView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const formatDateRange = (stats: CommunicationStats): string => {
     if (!stats.date_range.earliest || !stats.date_range.latest) {
@@ -170,7 +171,7 @@ const EnhancedCommunicationsView: React.FC = () => {
     return `${earliest} - ${latest}`
   }
 
-  const getInsightMessage = () => {
+  const insight = useMemo(() => {
     if (!stats) return null
     
     const gmailCount = stats.by_source.find(s => s.source === 'gmail')?.count || 0
@@ -197,19 +198,32 @@ const EnhancedCommunicationsView: React.FC = () => {
     }
     
     return null
-  }
+  }, [stats])
 
-  const insight = getInsightMessage()
+  // Memoized callback functions for performance
+  const handleContactSelect = useCallback((contact: Contact | null) => {
+    setSelectedContact(contact)
+  }, [])
+
+  const handleFilterApply = useCallback((query: string) => {
+    console.log('Applying contact filter:', query)
+    setCurrentFilterQuery(query)
+  }, [])
+
+  const handleFilterClear = useCallback(() => {
+    console.log('Clearing contact filters')
+    setCurrentFilterQuery(undefined)
+  }, [])
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Enhanced Header with Controls */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
+          <Typography variant="h4" fontWeight="bold" gutterBottom role="heading" aria-level={1}>
             Communications Hub
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" id="communications-description">
             Advanced communication analysis and insights
           </Typography>
         </Box>
@@ -355,7 +369,7 @@ const EnhancedCommunicationsView: React.FC = () => {
         {/* Enhanced People & Communications Panel */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <GroupIcon />
                 <Typography variant="h6">Smart Contact Hub</Typography>
@@ -365,16 +379,10 @@ const EnhancedCommunicationsView: React.FC = () => {
               </Box>
             </Box>
             <Box sx={{ flex: 1, overflow: 'hidden' }}>
-              <PeopleAndCommunications
-                onContactSelect={setSelectedContact}
-                onFilterApply={(query) => {
-                  console.log('Applying contact filter:', query)
-                  setCurrentFilterQuery(query)
-                }}
-                onFilterClear={() => {
-                  console.log('Clearing contact filters')
-                  setCurrentFilterQuery(undefined)
-                }}
+              <EnhancedPeopleAndCommunications
+                onContactSelect={handleContactSelect}
+                onFilterApply={handleFilterApply}
+                onFilterClear={handleFilterClear}
                 selectedContactId={selectedContact?.id}
                 currentFilterQuery={currentFilterQuery}
               />

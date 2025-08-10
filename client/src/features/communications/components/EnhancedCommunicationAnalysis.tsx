@@ -105,7 +105,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1.5 }}>
           {children}
         </Box>
       )}
@@ -424,7 +424,7 @@ const EnhancedCommunicationAnalysis: React.FC<EnhancedCommunicationAnalysisProps
   return (
     <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
       {/* Enhanced Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, pb: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, pb: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
           <Badge badgeContent="AI" color="success">
             <AnalyticsIcon sx={{ color: 'primary.main' }} />
