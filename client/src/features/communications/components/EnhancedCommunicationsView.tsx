@@ -39,7 +39,6 @@ import ContactsList from './ContactsList'
 import CommunicationTimeline from './CommunicationTimeline'
 import CommunicationTrendsChart from './CommunicationTrendsChart'
 import CommunicationOverviewChart from './CommunicationOverviewChart'
-import GmailIntegration from './GmailIntegration'
 import EmailFilteringPanel from './EmailFilteringPanel'
 import PeopleAndCommunications from './PeopleAndCommunications'
 import EnhancedPeopleAndCommunications from './EnhancedPeopleAndCommunications'
@@ -323,9 +322,6 @@ const EnhancedCommunicationsView: React.FC = () => {
           </Grid>
         </Grid>
       )}
-
-      {/* Enhanced Gmail Integration with Status */}
-      <GmailIntegration />
 
       {/* Enhanced Communication Overview with Real-time Updates */}
       <Box sx={{ position: 'relative' }}>

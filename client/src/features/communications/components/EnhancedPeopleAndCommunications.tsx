@@ -57,6 +57,7 @@ import {
 } from '@mui/icons-material'
 import { Contact } from '../types'
 import { communicationsApi } from '../services/api'
+import CompactDataSources from './CompactDataSources'
 
 interface EmailAddress {
   email_address: string
@@ -751,6 +752,11 @@ const EnhancedPeopleAndCommunications: React.FC<EnhancedPeopleAndCommunicationsP
           }}
           sx={{ mb: 1.5, '& .MuiOutlinedInput-input': { py: 0.75 } }}
         />
+
+        {/* Compact Data Sources */}
+        <Box sx={{ mb: 1.5 }}>
+          <CompactDataSources />
+        </Box>
 
         {/* Enhanced Controls */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
