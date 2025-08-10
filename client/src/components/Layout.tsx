@@ -15,7 +15,6 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Collapse,
   useTheme as useMuiTheme,
   useMediaQuery
 } from '@mui/material'
@@ -28,8 +27,6 @@ import {
   CalendarMonth as CalendarIcon,
   Psychology as AIIcon,
   Logout as LogoutIcon,
-  ExpandLess,
-  ExpandMore,
   Google as GoogleIcon,
   Message as MessageIcon
 } from '@mui/icons-material'
@@ -49,7 +46,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const muiTheme = useMuiTheme()
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'))
   const [mobileOpen, setMobileOpen] = React.useState(false)
-  const [communicationsOpen, setCommunicationsOpen] = React.useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -84,65 +80,115 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Typography>
       </Toolbar>
       <List>
-        {/* Standard Menu Items */}
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path)
-                if (isMobile) {
-                  setMobileOpen(false)
-                }
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {/* Dashboard */}
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/dashboard'}
+            onClick={() => {
+              navigate('/dashboard')
+              if (isMobile) {
+                setMobileOpen(false)
+              }
+            }}
+          >
+            <ListItemIcon><DashboardIcon /></ListItemIcon>
+            <ListItemText primary="Dashboard" />
+          </ListItemButton>
+        </ListItem>
 
-        {/* Communications Menu with Nested Items */}
+        {/* Communications Menu - Always Expanded */}
         <ListItem disablePadding>
           <ListItemButton
             selected={location.pathname.startsWith('/communications')}
             onClick={() => {
-              setCommunicationsOpen(!communicationsOpen)
-              // Navigate to main Communications page when collapsed
-              if (!communicationsOpen) {
-                navigate('/communications')
-                if (isMobile) {
-                  setMobileOpen(false)
-                }
+              navigate('/communications')
+              if (isMobile) {
+                setMobileOpen(false)
               }
             }}
           >
             <ListItemIcon><EmailIcon /></ListItemIcon>
             <ListItemText primary="Communications" />
-            {communicationsOpen ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>
         </ListItem>
-        <Collapse in={communicationsOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            {communicationsItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  sx={{ pl: 4 }}
-                  selected={location.pathname === item.path}
-                  onClick={() => {
-                    navigate(item.path)
-                    if (isMobile) {
-                      setMobileOpen(false)
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Collapse>
+        {/* Communications Sub-items - Always Visible */}
+        <List component="div" disablePadding>
+          {communicationsItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                sx={{ pl: 4 }}
+                selected={location.pathname === item.path}
+                onClick={() => {
+                  navigate(item.path)
+                  if (isMobile) {
+                    setMobileOpen(false)
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        {/* Remaining Menu Items */}
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/documents'}
+            onClick={() => {
+              navigate('/documents')
+              if (isMobile) {
+                setMobileOpen(false)
+              }
+            }}
+          >
+            <ListItemIcon><DocumentIcon /></ListItemIcon>
+            <ListItemText primary="Documents" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/incidents'}
+            onClick={() => {
+              navigate('/incidents')
+              if (isMobile) {
+                setMobileOpen(false)
+              }
+            }}
+          >
+            <ListItemIcon><IncidentIcon /></ListItemIcon>
+            <ListItemText primary="Incidents" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/calendar'}
+            onClick={() => {
+              navigate('/calendar')
+              if (isMobile) {
+                setMobileOpen(false)
+              }
+            }}
+          >
+            <ListItemIcon><CalendarIcon /></ListItemIcon>
+            <ListItemText primary="Calendar" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton
+            selected={location.pathname === '/assistant'}
+            onClick={() => {
+              navigate('/assistant')
+              if (isMobile) {
+                setMobileOpen(false)
+              }
+            }}
+          >
+            <ListItemIcon><AIIcon /></ListItemIcon>
+            <ListItemText primary="AI Assistant" />
+          </ListItemButton>
+        </ListItem>
 
         <ListItem disablePadding>
           <ListItemButton onClick={handleLogout}>
