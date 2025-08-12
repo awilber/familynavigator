@@ -30,8 +30,7 @@ jobs:
         
     - name: Run tests
       run: |
-        npm run test:client
-        npm run test:server
+        npm test
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
