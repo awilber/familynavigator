@@ -9,6 +9,7 @@ import os from 'os'
 import { MessagesSchemaAnalyzer } from '../services/messagesSchemaAnalyzer'
 import { MessagesAnalytics } from '../services/messagesAnalytics'
 import { MessagesContactsAnalyzer } from '../services/messagesContactsAnalyzer'
+import { MessagesPerformanceOptimizer } from '../services/messagesPerformanceOptimizer'
 
 const router = express.Router()
 
@@ -676,6 +677,97 @@ router.get('/contacts/search', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to search contacts: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Performance analysis endpoint
+router.get('/performance-analysis', async (req, res) => {
+  try {
+    console.log('[Messages] Running performance analysis')
+    
+    const optimizer = new MessagesPerformanceOptimizer()
+    const analysis = await optimizer.analyzePerformance()
+    
+    res.json({
+      success: true,
+      data: analysis
+    })
+  } catch (error) {
+    console.error('[Messages] Error running performance analysis:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to run performance analysis: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Create recommended indexes endpoint
+router.post('/optimize-indexes', async (req, res) => {
+  try {
+    const { indexNames } = req.body
+    
+    console.log('[Messages] Creating recommended indexes')
+    
+    const optimizer = new MessagesPerformanceOptimizer()
+    
+    // Get analysis first to get recommendations
+    const analysis = await optimizer.analyzePerformance()
+    
+    // Filter recommendations if specific indexes requested
+    let recommendationsToCreate = analysis.recommendedIndexes
+    if (indexNames && Array.isArray(indexNames)) {
+      recommendationsToCreate = analysis.recommendedIndexes.filter(rec => 
+        indexNames.includes(rec.indexName)
+      )
+    }
+    
+    if (recommendationsToCreate.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          message: 'No indexes to create',
+          created: [],
+          failed: []
+        }
+      })
+    }
+    
+    const result = await optimizer.createRecommendedIndexes(recommendationsToCreate)
+    
+    res.json({
+      success: true,
+      data: {
+        message: `Created ${result.created.length} indexes, ${result.failed.length} failed`,
+        ...result
+      }
+    })
+  } catch (error) {
+    console.error('[Messages] Error creating indexes:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create indexes: ' + (error instanceof Error ? error.message : String(error))
+    })
+  }
+})
+
+// Performance report endpoint
+router.get('/performance-report', async (req, res) => {
+  try {
+    console.log('[Messages] Generating performance report')
+    
+    const optimizer = new MessagesPerformanceOptimizer()
+    const report = await optimizer.generatePerformanceReport()
+    
+    res.setHeader('Content-Type', 'text/markdown')
+    res.setHeader('Content-Disposition', 'attachment; filename=messages-performance-report.md')
+    
+    res.send(report)
+  } catch (error) {
+    console.error('[Messages] Error generating performance report:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate performance report: ' + (error instanceof Error ? error.message : String(error))
     })
   }
 })
