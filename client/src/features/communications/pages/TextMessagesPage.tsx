@@ -548,7 +548,7 @@ const TextMessagesPage: React.FC = () => {
             {analysisData.performance.slowQueries && analysisData.performance.slowQueries.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                  Timing Details (Slow Queries >100ms)
+                  Timing Details (Slow Queries &gt;100ms)
                 </Typography>
                 {analysisData.performance.slowQueries.map((query: any, index: number) => (
                   <Alert severity="warning" sx={{ mb: 1 }} key={index}>
