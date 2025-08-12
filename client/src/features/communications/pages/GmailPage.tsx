@@ -132,6 +132,8 @@ const GmailPage: React.FC = () => {
     endDate: ''
   })
   const [activeTab, setActiveTab] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processProgress, setProcessProgress] = useState(0)
 
   useEffect(() => {
     loadGmailStatus()
@@ -243,6 +245,76 @@ const GmailPage: React.FC = () => {
       loadSyncProgress()
     } catch (error) {
       console.error('Error stopping sync:', error)
+    }
+  }
+
+  const handleProcessFiltered = async () => {
+    if (!status.isAuthenticated) {
+      alert('Please authenticate with Gmail first')
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      setProcessProgress(0)
+      
+      // Prepare filtering parameters
+      const filterParams = {
+        startDate: syncOptions.startDate || null,
+        endDate: syncOptions.endDate || null,
+        maxMessages: syncOptions.maxMessages || 1000,
+        query: syncOptions.query || null,
+        batchSize: syncOptions.batchSize
+      }
+      
+      console.log('Starting Gmail filtered processing with options:', filterParams)
+      
+      // Call the backend to process emails with filters
+      const response = await fetch('/api/gmail/process-filtered', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filters: filterParams
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Processing failed: ${response.statusText}`)
+      }
+      
+      // Track progress
+      const interval = setInterval(() => {
+        setProcessProgress(prev => {
+          if (prev >= 95) {
+            return prev
+          }
+          return prev + Math.random() * 10
+        })
+      }, 1000)
+      
+      const result = await response.json()
+      
+      clearInterval(interval)
+      setProcessProgress(100)
+      
+      console.log('Gmail processing completed:', result)
+      alert(`Processing completed! Processed ${result.processedEmails || 0} emails`)
+      
+      // Refresh status to show new results
+      loadGmailStatus()
+      
+      setTimeout(() => {
+        setIsProcessing(false)
+        setProcessProgress(0)
+      }, 2000)
+      
+    } catch (error) {
+      console.error('Error processing Gmail messages:', error)
+      alert(`Error processing emails: ${error.message}`)
+      setIsProcessing(false)
+      setProcessProgress(0)
     }
   }
 
@@ -625,6 +697,70 @@ const GmailPage: React.FC = () => {
                   }
                   label="Enable Verbose Logging"
                 />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                  Filtered Email Processing
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Processing Information
+                  </Typography>
+                  <Typography variant="body2">
+                    {syncOptions.startDate || syncOptions.endDate ? 
+                      `Date filtering active: ${syncOptions.startDate || 'beginning'} to ${syncOptions.endDate || 'present'}` :
+                      'No date filtering - all emails will be processed'
+                    }. Limited to {syncOptions.maxMessages || 1000} emails maximum.
+                    {syncOptions.query && ` Query filter: "${syncOptions.query}"`}
+                  </Typography>
+                </Alert>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<SyncIcon />}
+                  onClick={handleProcessFiltered}
+                  disabled={!status.isAuthenticated || isProcessing}
+                  sx={{ mr: 2 }}
+                >
+                  {isProcessing ? 'Processing Emails...' : 'Process Emails with Current Settings'}
+                </Button>
+                {isProcessing && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setIsProcessing(false)}
+                      sx={{ mr: 2 }}
+                    >
+                      Cancel Processing
+                    </Button>
+                    <Box sx={{ width: '100%', mt: 2 }}>
+                      <LinearProgress variant="determinate" value={processProgress} />
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        {Math.round(processProgress)}% completed
+                      </Typography>
+                    </Box>
+                  </>
+                )}
+              </Grid>
+
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Alert severity="warning">
+                  <Typography variant="body2" fontWeight="bold">
+                    Security Notice
+                  </Typography>
+                  <Typography variant="body2">
+                    All email processing uses your authenticated Gmail connection. Processing is done locally and data remains secure.
+                  </Typography>
+                </Alert>
               </Grid>
             </Grid>
           </CardContent>
