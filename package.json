@@ -20,14 +20,14 @@
     "db:seed": "npm run seed --workspace=server"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "puppeteer": "^24.16.1"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "playwright": "^1.54.2",
-    "puppeteer": "^24.15.0"
+    "playwright": "^1.54.2"
   }
 }
