@@ -115,9 +115,7 @@ export class MessagesPerformanceOptimizer {
       SELECT 
         name as indexName,
         tbl_name as tableName,
-        sql as creationSql,
-        unique_flag as isUnique,
-        partial as isPartial
+        sql as creationSql
       FROM sqlite_master 
       WHERE type = 'index' 
       AND name NOT LIKE 'sqlite_%'
@@ -130,12 +128,16 @@ export class MessagesPerformanceOptimizer {
       // Get columns for each index
       const indexColumns = await db.all(`PRAGMA index_info(${index.indexName})`)
       
+      // Determine if unique by checking SQL
+      const isUnique = index.creationSql ? index.creationSql.toUpperCase().includes('UNIQUE') : false
+      const isPartial = index.creationSql ? index.creationSql.toUpperCase().includes('WHERE') : false
+      
       indexInfos.push({
         tableName: index.tableName,
         indexName: index.indexName,
         columns: indexColumns.map((col: any) => col.name),
-        isUnique: Boolean(index.isUnique),
-        isPartial: Boolean(index.isPartial),
+        isUnique,
+        isPartial,
         creationSql: index.creationSql || `-- Auto-generated index`
       })
     }
@@ -155,17 +157,12 @@ export class MessagesPerformanceOptimizer {
         const countResult = await db.get(`SELECT COUNT(*) as count FROM ${tableName}`)
         const rowCount = countResult?.count || 0
 
-        // Get average row size (approximate)
-        const sizeResult = await db.get(`
-          SELECT 
-            page_count * page_size as total_size 
-          FROM pragma_table_info('${tableName}') 
-          JOIN pragma_page_count() 
-          JOIN pragma_page_size()
-          LIMIT 1
-        `)
+        // Get approximate table size (simplified approach)
+        const sizeInfo = await db.get(`PRAGMA page_count`)
+        const pageSize = await db.get(`PRAGMA page_size`)
+        const approximateSize = (sizeInfo?.page_count || 0) * (pageSize?.page_size || 4096)
         
-        const totalSize = sizeResult?.total_size || 0
+        const totalSize = approximateSize
         const averageRowSize = rowCount > 0 ? Math.round(totalSize / rowCount) : 0
 
         tableStats.push({
