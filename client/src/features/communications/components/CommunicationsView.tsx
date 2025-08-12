@@ -88,19 +88,19 @@ const CommunicationsView: React.FC = () => {
       <CardContent sx={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: 1.5, 
-        py: 1.5, 
-        px: 2,
-        '&:last-child': { pb: 1.5 }
+        gap: 1, 
+        py: 1, 
+        px: 1.5,
+        '&:last-child': { pb: 1 }
       }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 36,
-            height: 36,
-            borderRadius: 1.5,
+            width: 28,
+            height: 28,
+            borderRadius: 1,
             backgroundColor: `${color}20`,
             color: color,
             flexShrink: 0
@@ -109,10 +109,10 @@ const CommunicationsView: React.FC = () => {
           {icon}
         </Box>
         <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="h5" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1.1, mb: 0.25 }}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1, mb: 0.125 }}>
             {value}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 0.9, fontSize: '0.65rem' }}>
             {title}
           </Typography>
         </Box>
