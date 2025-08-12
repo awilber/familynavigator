@@ -110,11 +110,11 @@ const CommunicationsView: React.FC = () => {
         >
           {icon}
         </Box>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="body1" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1, mb: 0.05, fontSize: '0.875rem' }}>
+        <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+          <Typography variant="body1" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1, mb: 0.05, fontSize: '0.875rem', whiteSpace: 'nowrap' }}>
             {value}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 0.8, fontSize: '0.6rem' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 0.8, fontSize: '0.6rem', whiteSpace: 'nowrap' }}>
             {title}
           </Typography>
         </Box>
@@ -137,9 +137,9 @@ const CommunicationsView: React.FC = () => {
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box>
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Communications
         </Typography>
@@ -150,7 +150,7 @@ const CommunicationsView: React.FC = () => {
 
       {/* Stats Cards */}
       {stats && (
-        <Grid container spacing={2} sx={{ mb: 1 }}>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Total Messages"
@@ -187,7 +187,9 @@ const CommunicationsView: React.FC = () => {
       )}
 
       {/* Communication Overview Chart */}
-      <CommunicationOverviewChart />
+      <Box sx={{ mb: 3 }}>
+        <CommunicationOverviewChart />
+      </Box>
 
       {/* Email Filtering Panel - REPLACED WITH UNIFIED PANEL
       <EmailFilteringPanel 

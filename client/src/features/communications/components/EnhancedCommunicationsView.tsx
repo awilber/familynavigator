@@ -70,16 +70,16 @@ const EnhancedStatCard: React.FC<{
     }}
     onClick={onClick}
   >
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 0.25 }}>
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 1, px: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 48,
-            height: 48,
-            borderRadius: 2,
+            width: 32,
+            height: 32,
+            borderRadius: 1,
             backgroundColor: `${color}20`,
             color: color
           }}
@@ -103,10 +103,10 @@ const EnhancedStatCard: React.FC<{
         )}
       </Box>
       <Box>
-        <Typography variant="h4" fontWeight="bold" color="text.primary">
+        <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ whiteSpace: 'nowrap' }}>
           {value}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
           {title}
         </Typography>
         {subtitle && (
@@ -215,9 +215,9 @@ const EnhancedCommunicationsView: React.FC = () => {
   }, [])
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       {/* Enhanced Header with Controls */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom role="heading" aria-level={1}>
             Communications Hub
@@ -268,7 +268,7 @@ const EnhancedCommunicationsView: React.FC = () => {
 
       {/* Insight Alert */}
       {insight && (
-        <Alert severity={insight.type} sx={{ mb: 0.5 }}>
+        <Alert severity={insight.type} sx={{ mb: 2 }}>
           <AlertTitle>{insight.title}</AlertTitle>
           {insight.message}
         </Alert>
@@ -276,7 +276,7 @@ const EnhancedCommunicationsView: React.FC = () => {
 
       {/* Enhanced Stats Cards */}
       {stats && (
-        <Grid container spacing={1}>
+        <Grid container spacing={1} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <EnhancedStatCard
               title="Total Communications"
@@ -324,7 +324,7 @@ const EnhancedCommunicationsView: React.FC = () => {
       )}
 
       {/* Enhanced Communication Overview with Real-time Updates */}
-      <Box sx={{ position: 'relative' }}>
+      <Box sx={{ position: 'relative', mb: 3 }}>
         {realTimeMode && (
           <Chip
             icon={<VisibilityIcon />}

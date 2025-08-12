@@ -41,6 +41,21 @@ async function measureAndAdjustCards() {
       console.log('Could not click Communications, checking if already on page');
     }
 
+    // Switch to Advanced mode to test the Enhanced view
+    console.log('🔧 Switching to Advanced mode...');
+    try {
+      const modeSelector = await page.$('.MuiSelect-select');
+      if (modeSelector) {
+        await page.click('.MuiSelect-select');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await page.click('text=Advanced Mode');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('✅ Switched to Advanced mode');
+      }
+    } catch (error) {
+      console.log('Could not switch to Advanced mode:', error.message);
+    }
+
     // Wait for any cards to load (more flexible selector)
     console.log('⏳ Waiting for page content to load...');
     await page.waitForSelector('div, .MuiCard-root, .MuiGrid-item', { timeout: 10000 });
