@@ -72,6 +72,14 @@ const TextMessagesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0)
   const [importProgress, setImportProgress] = useState(0)
   const [isImporting, setIsImporting] = useState(false)
+  const [analysisData, setAnalysisData] = useState<{
+    statistics?: any
+    performance?: any
+    schema?: any
+    contacts?: any
+    loading: boolean
+    error?: string
+  }>({ loading: false })
 
   const [settings, setSettings] = useState({
     autoSync: false,
@@ -136,6 +144,45 @@ const TextMessagesPage: React.FC = () => {
     } catch (error) {
       console.error('Error importing messages:', error)
       setIsImporting(false)
+    }
+  }
+
+  const loadAnalysisData = async () => {
+    if (!selectedDatabase?.isValid) return
+
+    try {
+      setAnalysisData(prev => ({ ...prev, loading: true, error: undefined }))
+      
+      // Load all analysis data in parallel
+      const [statisticsRes, performanceRes, schemaRes, contactsRes] = await Promise.all([
+        fetch('/api/messages/statistics'),
+        fetch('/api/messages/performance-analysis'),
+        fetch('/api/messages/schema-info'),
+        fetch('/api/messages/contacts')
+      ])
+
+      const [statistics, performance, schema, contacts] = await Promise.all([
+        statisticsRes.json(),
+        performanceRes.json(),
+        schemaRes.json(),
+        contactsRes.json()
+      ])
+
+      setAnalysisData({
+        statistics: statistics.success ? statistics.data : null,
+        performance: performance.success ? performance.data : null,
+        schema: schema.success ? schema.data : null,
+        contacts: contacts.success ? contacts.data : null,
+        loading: false,
+        error: undefined
+      })
+    } catch (error) {
+      console.error('Error loading analysis data:', error)
+      setAnalysisData(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: error instanceof Error ? error.message : 'Failed to load analysis data'
+      }))
     }
   }
 
@@ -340,6 +387,239 @@ const TextMessagesPage: React.FC = () => {
     </Card>
   )
 
+  const renderAnalysisAndTiming = () => (
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6" fontWeight="bold">
+          Database Analysis & Performance Metrics
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AnalyticsIcon />}
+          onClick={loadAnalysisData}
+          disabled={analysisData.loading || !selectedDatabase?.isValid}
+        >
+          {analysisData.loading ? 'Analyzing...' : 'Run Analysis'}
+        </Button>
+      </Box>
+
+      {analysisData.error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="body2" fontWeight="bold">Analysis Error</Typography>
+          <Typography variant="body2">{analysisData.error}</Typography>
+        </Alert>
+      )}
+
+      {analysisData.loading && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+            <CircularProgress sx={{ mr: 2 }} />
+            <Typography>Running comprehensive database analysis...</Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Statistics Panel */}
+      {analysisData.statistics && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              Message Statistics
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="primary" fontWeight="bold">
+                    {analysisData.statistics.totalMessages?.toLocaleString() || 0}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Total Messages</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="secondary" fontWeight="bold">
+                    {analysisData.statistics.totalContacts?.toLocaleString() || 0}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Total Contacts</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="success.main" fontWeight="bold">
+                    {analysisData.statistics.totalConversations?.toLocaleString() || 0}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Conversations</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="warning.main" fontWeight="bold">
+                    {analysisData.statistics.dateRange?.spanDays || 0}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">Days Span</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+            
+            {analysisData.statistics.frequencyAnalysis && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                  Frequency Analysis
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">Daily Average</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {analysisData.statistics.frequencyAnalysis.dailyAverage}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">Monthly Average</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {analysisData.statistics.frequencyAnalysis.monthlyAverage}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">Peak Day</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {new Date(analysisData.statistics.frequencyAnalysis.peakDay).toLocaleDateString()}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">Peak Count</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {analysisData.statistics.frequencyAnalysis.peakCount}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Performance Panel */}
+      {analysisData.performance && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              Performance Analysis & Timing
+            </Typography>
+            
+            {analysisData.performance.optimizationSummary && (
+              <Box sx={{ mb: 3 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h5" color="info.main" fontWeight="bold">
+                        {analysisData.performance.optimizationSummary.totalQueries}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Queries Tested</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h5" color="warning.main" fontWeight="bold">
+                        {analysisData.performance.optimizationSummary.slowQueries}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Slow Queries</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h5" color="primary.main" fontWeight="bold">
+                        {analysisData.performance.optimizationSummary.averageQueryTime}ms
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Average Time</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h5" color="success.main" fontWeight="bold">
+                        {analysisData.performance.optimizationSummary.recommendedIndexCount}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Optimization Recs</Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {analysisData.performance.slowQueries && analysisData.performance.slowQueries.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                  Timing Details (Slow Queries >100ms)
+                </Typography>
+                {analysisData.performance.slowQueries.map((query: any, index: number) => (
+                  <Alert severity="warning" sx={{ mb: 1 }} key={index}>
+                    <Typography variant="body2" fontWeight="bold">
+                      {query.query.split(':')[0]} - {query.executionTime}ms
+                    </Typography>
+                    <Typography variant="caption">
+                      Scanned: {query.rowsScanned.toLocaleString()} rows • 
+                      Returned: {query.rowsReturned} results • 
+                      Memory: {(query.memoryUsage / 1024).toFixed(1)}KB
+                    </Typography>
+                  </Alert>
+                ))}
+              </Box>
+            )}
+
+            {analysisData.performance.optimizationSummary?.estimatedPerformanceGain && (
+              <Alert severity="info">
+                <Typography variant="body2" fontWeight="bold">
+                  Performance Improvement Potential: {analysisData.performance.optimizationSummary.estimatedPerformanceGain}
+                </Typography>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Schema Panel */}
+      {analysisData.schema && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+              Database Schema Information
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Database contains {analysisData.schema.tables?.length || 0} tables with detailed schema analysis
+            </Typography>
+            
+            {analysisData.schema.summary && (
+              <Box>
+                <Typography variant="body2">
+                  <strong>Version:</strong> {analysisData.schema.summary.version}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Total Tables:</strong> {analysisData.schema.summary.tableCount}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Total Rows:</strong> {analysisData.schema.summary.totalRows?.toLocaleString()}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Analysis Time:</strong> {new Date(analysisData.schema.summary.analysisDate).toLocaleString()}
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!analysisData.statistics && !analysisData.loading && !analysisData.error && (
+        <Alert severity="info">
+          <Typography variant="body2" fontWeight="bold">
+            Test Information & Timing Panels Ready
+          </Typography>
+          <Typography variant="body2">
+            Click "Run Analysis" to load comprehensive database statistics, performance metrics, and timing information for the selected Messages database.
+          </Typography>
+        </Alert>
+      )}
+    </Box>
+  )
+
   const renderSettings = () => (
     <Card>
       <CardContent>
@@ -466,6 +746,10 @@ const TextMessagesPage: React.FC = () => {
           label="Import"
           disabled={!selectedDatabase?.isValid}
         />
+        <Tab 
+          label="Analysis & Timing"
+          disabled={!selectedDatabase?.isValid}
+        />
         <Tab label="Features" />
         <Tab label="Settings" />
       </Tabs>
@@ -510,9 +794,11 @@ const TextMessagesPage: React.FC = () => {
         </Box>
       )}
 
-      {activeTab === 3 && renderFeaturePreview()}
+      {activeTab === 3 && renderAnalysisAndTiming()}
 
-      {activeTab === 4 && renderSettings()}
+      {activeTab === 4 && renderFeaturePreview()}
+
+      {activeTab === 5 && renderSettings()}
     </Box>
   )
 }

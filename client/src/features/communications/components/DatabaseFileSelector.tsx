@@ -426,25 +426,40 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
         onClose={() => setValidationDialog({ open: false, database: null, result: null })}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: { 
+            background: 'var(--color-background-elevated)',
+            border: '1px solid var(--color-border-subtle)'
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          background: 'var(--color-background-elevated)',
+          borderBottom: '1px solid var(--color-border-subtle)',
+          color: 'var(--color-text-primary)'
+        }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {validationDialog.result?.isValid ? (
               <CheckCircleIcon color="success" />
             ) : (
               <ErrorIcon color="error" />
             )}
-            Database Validation Results
+            <Typography variant="h6" fontWeight="bold" color="var(--color-text-primary)">
+              Database Validation Results
+            </Typography>
           </Box>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ 
+          background: 'var(--color-background-elevated)',
+          color: 'var(--color-text-primary)'
+        }}>
           {validationDialog.result && validationDialog.database && (
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
                 {validationDialog.database.filename}
               </Typography>
               
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" color="var(--color-text-secondary)" gutterBottom>
                 Size: {formatFileSize(validationDialog.result.fileInfo.size)} • 
                 Modified: {validationDialog.result.fileInfo.lastModified.toLocaleDateString()}
                 {validationDialog.result.fileInfo.messageCount && (
@@ -453,43 +468,79 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
               </Typography>
 
               {validationDialog.result.isValid ? (
-                <Alert severity="success" sx={{ mt: 2 }}>
-                  Database is valid and ready for import!
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    mt: 2,
+                    background: 'var(--color-status-success)20',
+                    border: '1px solid var(--color-status-success)',
+                    color: 'var(--color-text-primary)',
+                    '& .MuiAlert-icon': { color: 'var(--color-status-success)' }
+                  }}
+                >
+                  <Typography variant="body2" fontWeight="bold" color="var(--color-text-primary)">
+                    Database is valid and ready for import!
+                  </Typography>
                 </Alert>
               ) : (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mt: 2,
+                    background: 'var(--color-status-error)20',
+                    border: '1px solid var(--color-status-error)',
+                    color: 'var(--color-text-primary)',
+                    '& .MuiAlert-icon': { color: 'var(--color-status-error)' }
+                  }}
+                >
+                  <Typography variant="body2" fontWeight="bold" gutterBottom color="var(--color-text-primary)">
                     Validation Failed
                   </Typography>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
                     {validationDialog.result.errors.map((error, index) => (
                       <li key={index}>
-                        <Typography variant="body2">{error}</Typography>
+                        <Typography variant="body2" color="var(--color-text-primary)">{error}</Typography>
                       </li>
                     ))}
-                  </ul>
+                  </Box>
                 </Alert>
               )}
 
               {validationDialog.result.warnings.length > 0 && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                <Alert 
+                  severity="warning" 
+                  sx={{ 
+                    mt: 2,
+                    background: 'var(--color-status-warning)20',
+                    border: '1px solid var(--color-status-warning)',
+                    color: 'var(--color-text-primary)',
+                    '& .MuiAlert-icon': { color: 'var(--color-status-warning)' }
+                  }}
+                >
+                  <Typography variant="body2" fontWeight="bold" gutterBottom color="var(--color-text-primary)">
                     Warnings
                   </Typography>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
                     {validationDialog.result.warnings.map((warning, index) => (
                       <li key={index}>
-                        <Typography variant="body2">{warning}</Typography>
+                        <Typography variant="body2" color="var(--color-text-primary)">{warning}</Typography>
                       </li>
                     ))}
-                  </ul>
+                  </Box>
                 </Alert>
               )}
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setValidationDialog({ open: false, database: null, result: null })}>
+        <DialogActions sx={{ 
+          background: 'var(--color-background-elevated)',
+          borderTop: '1px solid var(--color-border-subtle)',
+          gap: 1 
+        }}>
+          <Button 
+            onClick={() => setValidationDialog({ open: false, database: null, result: null })}
+            sx={{ color: 'var(--color-text-secondary)' }}
+          >
             Close
           </Button>
           {validationDialog.result?.isValid && validationDialog.database && (
@@ -498,6 +549,11 @@ const DatabaseFileSelector: React.FC<DatabaseFileSelectorProps> = ({
               onClick={() => {
                 handleDatabaseSelect(validationDialog.database!)
                 setValidationDialog({ open: false, database: null, result: null })
+              }}
+              sx={{
+                background: 'var(--color-accent-primary)',
+                color: 'white',
+                '&:hover': { background: 'var(--color-accent-primary-hover)' }
               }}
             >
               Select This Database
