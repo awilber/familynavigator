@@ -85,26 +85,34 @@ const CommunicationsView: React.FC = () => {
     color?: string
   }> = ({ title, value, icon, color = 'var(--color-accent-primary)' }) => (
     <Card sx={{ height: '100%', background: 'var(--color-background-elevated)' }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <CardContent sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1.5, 
+        py: 1.5, 
+        px: 2,
+        '&:last-child': { pb: 1.5 }
+      }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 48,
-            height: 48,
-            borderRadius: 2,
+            width: 36,
+            height: 36,
+            borderRadius: 1.5,
             backgroundColor: `${color}20`,
-            color: color
+            color: color,
+            flexShrink: 0
           }}
         >
           {icon}
         </Box>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" color="text.primary">
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="h5" fontWeight="bold" color="text.primary" sx={{ lineHeight: 1.1, mb: 0.25 }}>
             {value}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
             {title}
           </Typography>
         </Box>
@@ -140,7 +148,7 @@ const CommunicationsView: React.FC = () => {
 
       {/* Stats Cards */}
       {stats && (
-        <Grid container spacing={3}>
+        <Grid container spacing={2} sx={{ mb: 1 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Total Messages"
